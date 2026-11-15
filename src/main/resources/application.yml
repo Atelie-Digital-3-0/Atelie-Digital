@@ -1,4 +1,7 @@
 spring:
+  config:
+    # Carrega o .env (dev) quando a aplicacao e iniciada fora do docker (IDE/mvnw); variaveis do ambiente tem prioridade.
+    import: optional:file:.env[.properties]
   application:
     name: atelie-core
   datasource:

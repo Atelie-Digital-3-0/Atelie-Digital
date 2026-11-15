@@ -1,5 +1,6 @@
 package br.com.ateliedigital.exceptions;
 
+import tools.jackson.databind.exc.InvalidFormatException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -16,11 +17,17 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.client.RestClientException;
+
 import java.time.Instant;
 import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class,
             HttpMessageNotReadableException.class, MissingServletRequestParameterException.class,
             MethodArgumentTypeMismatchException.class, BindException.class})
@@ -29,7 +36,21 @@ public class GlobalExceptionHandler {
                 ? invalid.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getDefaultMessage()).filter(Objects::nonNull).findFirst().orElse("Invalid datas")
                 : exception.getMessage();
+        if (exception instanceof HttpMessageNotReadableException unreadable) {
+            message = unreadableMessage(unreadable);
+        }
         return response(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    private String unreadableMessage(HttpMessageNotReadableException exception) {
+        for (Throwable cause = exception.getCause(); cause != null; cause = cause.getCause()) {
+            if (cause instanceof InvalidFormatException invalid && invalid.getTargetType() != null
+                    && java.time.temporal.TemporalAccessor.class.isAssignableFrom(invalid.getTargetType())) {
+                String field = invalid.getPath().isEmpty() ? "date" : invalid.getPath().getLast().getPropertyName();
+                return field + " must be a valid date in the format yyyy-MM-dd";
+            }
+        }
+        return "Malformed or unreadable request body";
     }
 
     @ExceptionHandler({ResourceNotFoundException.class, EntityNotFoundException.class, NoResourceFoundException.class})
@@ -50,8 +71,15 @@ public class GlobalExceptionHandler {
         return response(status, exception.getReason() != null ? exception.getReason() : status.getReasonPhrase(), request);
     }
 
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<ApiError> externalService(RestClientException exception, HttpServletRequest request) {
+        log.error("External service call failed on {}", request.getRequestURI(), exception);
+        return response(HttpStatus.BAD_GATEWAY, "External service unavailable or rejected the request", request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> unexpected(Exception exception, HttpServletRequest request) {
+        log.error("Unexpected error on {}", request.getRequestURI(), exception);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error when processing the request", request);
     }
 
