@@ -1,7 +1,8 @@
 package br.com.ateliedigital.accounts.integration.keycloak;
 
+import br.com.ateliedigital.exceptions.ResourceNotFoundException;
+import br.com.ateliedigital.exceptions.RuleConflit;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -9,7 +10,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
@@ -47,7 +47,7 @@ public class KeycloakAdminClient {
                     .retrieve()
                     .toBodilessEntity();
         } catch (HttpClientErrorException.Conflict exception) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
+            throw new RuleConflit("Email is already registered");
         }
         String location = response.getHeaders().getLocation().toString();
         return UUID.fromString(location.substring(location.lastIndexOf('/') + 1));
@@ -66,7 +66,7 @@ public class KeycloakAdminClient {
                     .body(Map.of("email", email, "emailVerified", false))
                     .retrieve().toBodilessEntity();
         } catch (HttpClientErrorException.Conflict exception) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
+            throw new RuleConflit("Email is already registered");
         }
     }
 
@@ -102,7 +102,7 @@ public class KeycloakAdminClient {
                 .headers(headers -> headers.setBearerAuth(token))
                 .retrieve().body(new ParameterizedTypeReference<>() { });
         if (availableRoles == null) {
-            throw new IllegalStateException("Keycloak user was not found: " + keycloakId);
+            throw new ResourceNotFoundException("Keycloak user was not found: " + keycloakId);
         }
         var role = availableRoles.stream()
                 .filter(available -> ARTISAN_ROLE.equals(available.get("name")))

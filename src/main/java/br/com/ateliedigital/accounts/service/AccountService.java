@@ -12,6 +12,8 @@ import br.com.ateliedigital.accounts.mapper.AddressMapper;
 import br.com.ateliedigital.accounts.model.Account;
 import br.com.ateliedigital.accounts.model.Address;
 import br.com.ateliedigital.accounts.repository.AccountRepository;
+import br.com.ateliedigital.exceptions.ResourceNotFoundException;
+import br.com.ateliedigital.exceptions.RuleConflit;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -46,7 +48,7 @@ public class AccountService {
     @Transactional
     public AccountResponse create(CreateAccountRequest request) {
         if (accountRepository.existsByCpf(request.cpf()) || accountRepository.existsByEmailIgnoreCase(request.email())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF or email is already registered");
+            throw new RuleConflit("CPF or email is already registered");
         }
         UUID keycloakId = keycloakAdminClient.createUser(request.email(), request.firstName(), request.lastName());
         Account saved;
@@ -71,7 +73,7 @@ public class AccountService {
     @Transactional(readOnly = true)
     public Account getCurrent(JwtAuthenticationToken authentication) {
         return accountRepository.findByKeycloakId(keycloakId(authentication))
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
     }
 
     @Transactional
@@ -82,7 +84,7 @@ public class AccountService {
         Account account = getCurrent(authentication);
         boolean emailChanged = !account.getEmail().equalsIgnoreCase(request.email());
         if (emailChanged && accountRepository.existsByEmailIgnoreCase(request.email())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
+            throw new RuleConflit("Email is already registered");
         }
 
         String oldEmail = account.getEmail();
@@ -118,7 +120,7 @@ public class AccountService {
                 throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "JWT has no email claim");
             }
             if (accountRepository.existsByEmailIgnoreCase(email)) {
-                throw new ResponseStatusException(HttpStatus.CONFLICT, "Email is already registered");
+                throw new RuleConflit("Email is already registered");
             }
             account = new Account();
             account.setKeycloakId(keycloakId);
@@ -127,7 +129,7 @@ public class AccountService {
 
         String oldCpf = account.getCpf();
         if (!request.cpf().equals(oldCpf) && accountRepository.existsByCpf(request.cpf())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "CPF is already registered");
+            throw new RuleConflit("CPF is already registered");
         }
 
         mapper.completeEntity(request, account);
@@ -152,15 +154,11 @@ public class AccountService {
 
     public void grantArtisanRole(UUID keycloakId) {
         if (accountRepository.findByKeycloakId(keycloakId).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found");
+            throw new ResourceNotFoundException("Account not found");
         }
         keycloakAdminClient.grantArtisanRole(keycloakId);
     }
 
-//    public String mercadoPagoToken(JwtAuthenticationToken authentication) {
-//        keycloakId(authentication);
-//        return keycloakAdminClient.mercadoPagoAccessToken(authentication.getToken().getTokenValue());
-//    }
 
     private void publishCreated(Account account) {
         events.publishEvent(new AccountCreatedEvent(account.getId(),
