@@ -7,14 +7,27 @@ import br.com.ateliedigital.accounts.dto.AccountResponses.AccountResponse;
 import br.com.ateliedigital.accounts.model.Account;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface AccountMapper {
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "keycloakId", ignore = true)
+    @Mapping(target = "bio", ignore = true)
+    @Mapping(target = "addresses", ignore = true)
     Account toEntity(CreateAccountRequest data);
 
-    Account toEntityUpdated(UpdateAccountRequest data);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "keycloakId", ignore = true)
+    @Mapping(target = "cpf", ignore = true)
+    @Mapping(target = "addresses", ignore = true)
+    void updateEntity(UpdateAccountRequest data, @MappingTarget Account account);
 
-    Account toEntityCompleted(CompleteAccountRequest data);
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "keycloakId", ignore = true)
+    @Mapping(target = "email", ignore = true)
+    @Mapping(target = "addresses", ignore = true)
+    void completeEntity(CompleteAccountRequest data, @MappingTarget Account account);
 
     AccountResponse toResponse(Account account);
 }

@@ -8,7 +8,7 @@ import lombok.Setter;
 import java.util.UUID;
 
 @Entity
-@Table(name = "addresses")
+@Table(name = "addresses", schema = "accounts")
 @Getter
 @Setter
 @NoArgsConstructor

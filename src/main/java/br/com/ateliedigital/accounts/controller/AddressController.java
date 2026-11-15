@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -25,16 +24,13 @@ import java.util.UUID;
 @PreAuthorize("hasAnyRole('CLIENT', 'ARTISAN')")
 public class AddressController {
     private final AddressService addressService;
-    private final AddressMapper mapper;
     private final ViaCepClient viaCepClient;
 
     public AddressController(
             AddressService addressService,
-            AddressMapper mapper,
             ViaCepClient viaCepClient
     ) {
         this.addressService = addressService;
-        this.mapper = mapper;
         this.viaCepClient = viaCepClient;
     }
 

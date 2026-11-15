@@ -67,10 +67,5 @@ public class AccountController {
 
         return ResponseEntity.ok(response);
     }
-//
-//    @GetMapping("/me/mercado-pago-token")
-//    @PreAuthorize("hasAnyRole('ARTISAN', 'ADMIN')")
-//    public Map<String, String> mercadoPagoToken(JwtAuthenticationToken authentication) {
-//        return Map.of("access_token", accountService.mercadoPagoToken(authentication));
-//    }
+
 }
