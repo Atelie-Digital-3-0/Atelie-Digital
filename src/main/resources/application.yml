@@ -1,6 +1,13 @@
 spring:
+  config:
+    # Carrega o .env (dev) quando a aplicacao e iniciada fora do docker (IDE/mvnw); variaveis do ambiente tem prioridade.
+    import: optional:file:.env[.properties]
   application:
     name: atelie-core
+  http:
+    clients:
+      connect-timeout: ${atelie.http.connect-timeout}
+      read-timeout: ${atelie.http.read-timeout}
   datasource:
     url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/atelie}
     username: ${DATABASE_USERNAME:atelie}

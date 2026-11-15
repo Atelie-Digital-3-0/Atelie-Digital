@@ -17,7 +17,7 @@ public final class AccountRequests {
             @NotBlank String firstName,
             @NotBlank String lastName,
             @NotBlank String cellphone,
-            @NotNull @Past LocalDate dateOfBirth,
+            @NotNull(message = "date_of_birth is required") @Past(message = "date_of_birth must be a past date") LocalDate dateOfBirth,
             @NotBlank @Pattern(regexp = "[0-9]{11}") String cpf,
             @NotBlank @Email String email
     ) { }
@@ -26,7 +26,7 @@ public final class AccountRequests {
             @NotBlank String firstName,
             @NotBlank String lastName,
             @NotBlank String cellphone,
-            @NotNull @Past LocalDate dateOfBirth,
+            @NotNull(message = "date_of_birth is required") @Past(message = "date_of_birth must be a past date") LocalDate dateOfBirth,
             @NotBlank @Email String email,
             String bio
     ) { }
@@ -35,7 +35,7 @@ public final class AccountRequests {
             @NotBlank String firstName,
             @NotBlank String lastName,
             @NotBlank String cellphone,
-            @NotNull @Past LocalDate dateOfBirth,
+            @NotNull(message = "date_of_birth is required") @Past(message = "date_of_birth must be a past date") LocalDate dateOfBirth,
             @NotBlank @Pattern(regexp = "[0-9]{11}") String cpf,
             String bio,
             @NotNull(message = "Campo obrigatório") @Valid AddressRequest address

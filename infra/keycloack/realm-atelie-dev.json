@@ -79,7 +79,7 @@
       "publicClient": true,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": false,
+      "directAccessGrantsEnabled": true,
       "serviceAccountsEnabled": false,
       "protocol": "openid-connect",
       "redirectUris": [
@@ -214,7 +214,7 @@
       "alias": "google",
       "providerId": "google",
       "enabled": true,
-      "trustEmail": false,
+      "trustEmail": true,
       "firstBrokerLoginFlowAlias": "first broker login",
       "config": {
         "clientId": "${GOOGLE_CLIENT_ID}",

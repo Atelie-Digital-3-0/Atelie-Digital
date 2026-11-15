@@ -6,13 +6,12 @@ import br.com.ateliedigital.accounts.mapper.AddressMapper;
 import br.com.ateliedigital.accounts.model.Account;
 import br.com.ateliedigital.accounts.model.Address;
 import br.com.ateliedigital.accounts.repository.AddressRepository;
+import br.com.ateliedigital.exceptions.ResourceNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -34,9 +33,6 @@ public class AddressService {
     public Page<AddressResponse> list(JwtAuthenticationToken authentication, Pageable pageable) {
         Account account = accountService.getCurrent(authentication);
         Page<Address> addressesPage = addressRepository.findAllByAccountId(account.getId(), pageable);
-        if(addressesPage.isEmpty()){
-            return null;
-        }
 
         return addressesPage.map(mapper::toResponse);
     }
@@ -59,7 +55,7 @@ public class AddressService {
     ) {
         Account account = accountService.getCurrent(authentication);
         Address address = addressRepository.findByIdAndAccountId(addressId, account.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
         if (request.main()) markOnlyMain(account.getId(), addressId);
 
         address.setZipCode(request.zipCode());
@@ -78,7 +74,7 @@ public class AddressService {
     public void delete(JwtAuthenticationToken authentication, UUID addressId) {
         Account account = accountService.getCurrent(authentication);
         Address address = addressRepository.findByIdAndAccountId(addressId, account.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
         addressRepository.delete(address);
     }
 

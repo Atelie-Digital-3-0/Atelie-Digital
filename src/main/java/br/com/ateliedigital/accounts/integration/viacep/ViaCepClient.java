@@ -1,6 +1,7 @@
 package br.com.ateliedigital.accounts.integration.viacep;
 
 import br.com.ateliedigital.accounts.dto.AddressResponses.ZipCodeResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -8,8 +9,9 @@ import org.springframework.web.client.RestClient;
 public class ViaCepClient {
     private final RestClient restClient;
 
-    public ViaCepClient(RestClient.Builder builder) {
-        this.restClient = builder.baseUrl("https://viacep.com.br").build();
+    public ViaCepClient(RestClient.Builder builder,
+                        @Value("${atelie.viacep.base-url:https://viacep.com.br}") String baseUrl) {
+        this.restClient = builder.baseUrl(baseUrl).build();
     }
 
     public ZipCodeResponse lookup(String rawCep) {
