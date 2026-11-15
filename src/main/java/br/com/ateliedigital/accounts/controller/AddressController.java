@@ -7,6 +7,8 @@ import br.com.ateliedigital.accounts.integration.viacep.ViaCepClient;
 import br.com.ateliedigital.accounts.mapper.AddressMapper;
 import br.com.ateliedigital.accounts.service.AddressService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,8 +52,12 @@ public class AddressController {
     }
 
     @GetMapping
-    public List<AddressResponse> list(JwtAuthenticationToken authentication) {
-        return addressService.list(authentication).stream().map(mapper::toResponse).toList();
+    public ResponseEntity<Page<AddressResponse>> list(
+            JwtAuthenticationToken authentication,
+            Pageable pageable
+    ){
+        Page<AddressResponse> page = addressService.list(authentication, pageable);
+        return ResponseEntity.ok(page);
     }
 
     @PutMapping("/{addressId}")

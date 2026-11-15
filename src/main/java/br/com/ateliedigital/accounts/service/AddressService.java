@@ -6,6 +6,8 @@ import br.com.ateliedigital.accounts.mapper.AddressMapper;
 import br.com.ateliedigital.accounts.model.Account;
 import br.com.ateliedigital.accounts.model.Address;
 import br.com.ateliedigital.accounts.repository.AddressRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -29,9 +31,14 @@ public class AddressService {
     }
 
     @Transactional(readOnly = true)
-    public List<Address> list(JwtAuthenticationToken authentication) {
+    public Page<AddressResponse> list(JwtAuthenticationToken authentication, Pageable pageable) {
         Account account = accountService.getCurrent(authentication);
-        return addressRepository.findAllByAccountId(account.getId());
+        Page<Address> addressesPage = addressRepository.findAllByAccountId(account.getId());
+        if(addressesPage.isEmpty()){
+            throw new RuntimeException("Nenhum setor localizado");
+        }
+
+        return addressesPage.map(mapper::toResponse);
     }
 
     @Transactional
