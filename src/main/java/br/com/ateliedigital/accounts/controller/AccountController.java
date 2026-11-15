@@ -1,5 +1,6 @@
 package br.com.ateliedigital.accounts.controller;
 
+import br.com.ateliedigital.accounts.dto.AccountRequests.CompleteAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountRequests.CreateAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountRequests.UpdateAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountResponses.AccountResponse;
@@ -7,10 +8,13 @@ import br.com.ateliedigital.accounts.mapper.AccountMapper;
 import br.com.ateliedigital.accounts.service.AccountService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Map;
 
 @RestController
@@ -25,27 +29,48 @@ public class AccountController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public AccountResponse create(@Valid @RequestBody CreateAccountRequest request) {
-        return mapper.toResponse(accountService.create(request));
+    public ResponseEntity<AccountResponse> create(@Valid @RequestBody CreateAccountRequest request) {
+        AccountResponse response = accountService.create(request);
+
+        URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(response.id())
+                .toUri();
+
+        return ResponseEntity.created(uri).body(response);
     }
 
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('CLIENT', 'ARTISAN', 'ADMIN')")
-    public AccountResponse getCurrent(JwtAuthenticationToken authentication) {
-        return mapper.toResponse(accountService.getCurrent(authentication));
+    public ResponseEntity<AccountResponse> getCurrent(JwtAuthenticationToken authentication) {
+        return ResponseEntity.ok(mapper.toResponse(accountService.getCurrent(authentication)));
     }
 
-    @PutMapping("/me")
-    @PreAuthorize("hasAnyRole('CLIENT', 'ARTISAN', 'ADMIN')")
-    public AccountResponse updateCurrent(JwtAuthenticationToken authentication,
-                                         @Valid @RequestBody UpdateAccountRequest request) {
-        return mapper.toResponse(accountService.updateCurrent(authentication, request));
+    @PutMapping("/me/complete")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ARTISAN')")
+    public ResponseEntity<AccountResponse> completeCurrent(
+            JwtAuthenticationToken authentication,
+            @Valid @RequestBody CompleteAccountRequest request
+    ) {
+        AccountResponse response = accountService.completeCurrent(authentication, request);
+
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/me/mercado-pago-token")
-    @PreAuthorize("hasAnyRole('ARTISAN', 'ADMIN')")
-    public Map<String, String> mercadoPagoToken(JwtAuthenticationToken authentication) {
-        return Map.of("access_token", accountService.mercadoPagoToken(authentication));
+    @PatchMapping("/me")
+    @PreAuthorize("hasAnyRole('CLIENT', 'ARTISAN')")
+    public ResponseEntity<AccountResponse> updateCurrent(
+            JwtAuthenticationToken authentication,
+            @Valid @RequestBody UpdateAccountRequest request
+    ) {
+        AccountResponse response = accountService.updateCurrent(authentication, request);
+
+        return ResponseEntity.ok(response);
     }
+//
+//    @GetMapping("/me/mercado-pago-token")
+//    @PreAuthorize("hasAnyRole('ARTISAN', 'ADMIN')")
+//    public Map<String, String> mercadoPagoToken(JwtAuthenticationToken authentication) {
+//        return Map.of("access_token", accountService.mercadoPagoToken(authentication));
+//    }
 }

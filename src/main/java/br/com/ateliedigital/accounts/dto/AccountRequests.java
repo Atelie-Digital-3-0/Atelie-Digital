@@ -1,5 +1,6 @@
 package br.com.ateliedigital.accounts.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,9 +27,19 @@ public final class AccountRequests {
             @NotBlank String lastName,
             @NotBlank String cellphone,
             @NotNull @Past LocalDate dateOfBirth,
-            @NotBlank @Pattern(regexp = "[0-9]{11}") String cpf,
-            @NotBlank @Email String email
+            @NotBlank @Email String email,
+            String bio
     ) { }
+
+    public record CompleteAccountRequest(
+            @NotBlank String firstName,
+            @NotBlank String lastName,
+            @NotBlank String cellphone,
+            @NotNull @Past LocalDate dateOfBirth,
+            @NotBlank @Pattern(regexp = "[0-9]{11}") String cpf,
+            String bio,
+            @NotNull(message = "Campo obrigatório") @Valid AddressRequest address
+    ){}
 
     public record AddressRequest(
             @NotBlank @Size(max = 8) String cep,

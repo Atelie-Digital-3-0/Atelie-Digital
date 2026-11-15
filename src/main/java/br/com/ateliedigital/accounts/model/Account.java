@@ -45,6 +45,9 @@ public class Account {
     @Column(nullable = false)
     private String email;
 
+    @Column(nullable = true)
+    private String bio;
+
     @OneToMany(mappedBy = "account", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Address> addresses = new ArrayList<>();
 

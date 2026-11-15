@@ -8,7 +8,7 @@ public final class AccountResponses {
     private AccountResponses() { }
 
     public record AccountResponse(UUID id, UUID keycloakId, String firstName, String lastName,
-                                  String cellphone, LocalDate dateOfBirth, String cpf, String email,
+                                  String cellphone, LocalDate dateOfBirth, String cpf, String email, String bio,
                                   List<AddressResponse> addresses) { }
 
     public record AddressResponse(UUID id, String cep, String zipCode, String street, String number,
