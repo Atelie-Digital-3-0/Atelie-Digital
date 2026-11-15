@@ -33,9 +33,9 @@ public class AddressService {
     @Transactional(readOnly = true)
     public Page<AddressResponse> list(JwtAuthenticationToken authentication, Pageable pageable) {
         Account account = accountService.getCurrent(authentication);
-        Page<Address> addressesPage = addressRepository.findAllByAccountId(account.getId());
+        Page<Address> addressesPage = addressRepository.findAllByAccountId(account.getId(), pageable);
         if(addressesPage.isEmpty()){
-            throw new RuntimeException("Nenhum setor localizado");
+            return null;
         }
 
         return addressesPage.map(mapper::toResponse);
@@ -62,7 +62,6 @@ public class AddressService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
         if (request.main()) markOnlyMain(account.getId(), addressId);
 
-        address.setCep(request.cep());
         address.setZipCode(request.zipCode());
         address.setStreet(request.street());
         address.setNumber(request.number());

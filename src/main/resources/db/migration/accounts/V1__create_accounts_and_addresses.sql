@@ -1,4 +1,4 @@
-CREATE TABLE accounts (
+CREATE TABLE accounts.accounts (
     id UUID PRIMARY KEY,
     keycloak_id UUID NOT NULL UNIQUE,
     first_name VARCHAR(255) NOT NULL,
@@ -10,11 +10,10 @@ CREATE TABLE accounts (
     email VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE addresses (
+CREATE TABLE accounts.addresses (
     id UUID PRIMARY KEY,
-    account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-    cep VARCHAR(8) NOT NULL,
-    zip_code VARCHAR(255),
+    account_id UUID NOT NULL REFERENCES accounts.accounts(id) ON DELETE CASCADE,
+    zip_code VARCHAR(8) NOT NULL,
     street VARCHAR(255) NOT NULL,
     number VARCHAR(255) NOT NULL,
     complement VARCHAR(255),
@@ -24,4 +23,4 @@ CREATE TABLE addresses (
     is_main BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE INDEX idx_addresses_account_id ON addresses(account_id);
+CREATE INDEX idx_addresses_account_id ON accounts.addresses(account_id);

@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "accounts", uniqueConstraints = {
+@Table(name = "accounts", schema = "accounts", uniqueConstraints = {
         @UniqueConstraint(name = "uk_accounts_keycloak_id", columnNames = "keycloak_id"),
         @UniqueConstraint(name = "uk_accounts_cpf", columnNames = "cpf"),
         @UniqueConstraint(name = "uk_accounts_email", columnNames = "email")
