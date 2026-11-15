@@ -21,10 +21,7 @@ public class Address {
     @JoinColumn(name = "account_id", nullable = false)
     private Account account;
 
-    @Column(nullable = false, length = 8)
-    private String cep;
-
-    @Column(name = "zip_code")
+    @Column(name = "zip_code", nullable = false, length = 8)
     private String zipCode;
 
     @Column(nullable = false)

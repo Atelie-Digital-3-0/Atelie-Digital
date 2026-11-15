@@ -6,6 +6,7 @@ CREATE TABLE accounts (
     cellphone VARCHAR(255) NOT NULL,
     date_of_birth DATE NOT NULL,
     cpf VARCHAR(11) NOT NULL UNIQUE,
+    bio VARCHAR(255),
     email VARCHAR(255) NOT NULL UNIQUE
 );
 

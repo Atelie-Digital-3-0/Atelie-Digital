@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Past;
 import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import br.com.ateliedigital.accounts.dto.AddressRequests.AddressRequest;
 
 import java.time.LocalDate;
 
@@ -41,15 +41,4 @@ public final class AccountRequests {
             @NotNull(message = "Campo obrigatório") @Valid AddressRequest address
     ){}
 
-    public record AddressRequest(
-            @NotBlank @Size(max = 8) String cep,
-            String zipCode,
-            @NotBlank String street,
-            @NotBlank String number,
-            String complement,
-            @NotBlank String neighborhood,
-            @NotBlank String city,
-            @NotBlank @Size(min = 2, max = 2) String state,
-            boolean main
-    ) { }
 }

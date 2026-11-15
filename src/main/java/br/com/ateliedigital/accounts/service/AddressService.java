@@ -1,7 +1,8 @@
 package br.com.ateliedigital.accounts.service;
 
-import br.com.ateliedigital.accounts.dto.AccountRequests.AddressRequest;
-import br.com.ateliedigital.accounts.mapper.AccountMapper;
+import br.com.ateliedigital.accounts.dto.AddressRequests.AddressRequest;
+import br.com.ateliedigital.accounts.dto.AddressResponses.AddressResponse;
+import br.com.ateliedigital.accounts.mapper.AddressMapper;
 import br.com.ateliedigital.accounts.model.Account;
 import br.com.ateliedigital.accounts.model.Address;
 import br.com.ateliedigital.accounts.repository.AddressRepository;
@@ -18,10 +19,10 @@ import java.util.UUID;
 public class AddressService {
     private final AddressRepository addressRepository;
     private final AccountService accountService;
-    private final AccountMapper mapper;
+    private final AddressMapper mapper;
 
     public AddressService(AddressRepository addressRepository, AccountService accountService,
-                          AccountMapper mapper) {
+                          AddressMapper mapper) {
         this.addressRepository = addressRepository;
         this.accountService = accountService;
         this.mapper = mapper;
@@ -34,20 +35,26 @@ public class AddressService {
     }
 
     @Transactional
-    public Address create(JwtAuthenticationToken authentication, AddressRequest request) {
+    public AddressResponse create(JwtAuthenticationToken authentication, AddressRequest request) {
         Account account = accountService.getCurrent(authentication);
-        Address address = mapper.toAddress(request);
+        Address address = mapper.toEntity(request);
         address.setAccount(account);
         if (request.main()) markOnlyMain(account.getId(), null);
-        return addressRepository.save(address);
+
+        return mapper.toResponse(addressRepository.save(address));
     }
 
     @Transactional
-    public Address update(JwtAuthenticationToken authentication, UUID addressId, AddressRequest request) {
+    public AddressResponse update(
+            JwtAuthenticationToken authentication,
+            UUID addressId,
+            AddressRequest request
+    ) {
         Account account = accountService.getCurrent(authentication);
         Address address = addressRepository.findByIdAndAccountId(addressId, account.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Address not found"));
         if (request.main()) markOnlyMain(account.getId(), addressId);
+
         address.setCep(request.cep());
         address.setZipCode(request.zipCode());
         address.setStreet(request.street());
@@ -57,7 +64,8 @@ public class AddressService {
         address.setCity(request.city());
         address.setState(request.state());
         address.setMain(request.main());
-        return addressRepository.save(address);
+
+        return mapper.toResponse(addressRepository.save(address));
     }
 
     @Transactional
