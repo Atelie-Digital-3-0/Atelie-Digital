@@ -1,0 +1,109 @@
+spring:
+  config:
+    # Carrega o .env (dev) quando a aplicacao e iniciada fora do docker (IDE/mvnw); variaveis do ambiente tem prioridade.
+    import: optional:file:.env[.properties]
+  application:
+    name: atelie-core
+  http:
+    clients:
+      connect-timeout: ${atelie.http.connect-timeout}
+      read-timeout: ${atelie.http.read-timeout}
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5433/atelie}
+    username: ${DATABASE_USERNAME:atelie}
+    password: ${DATABASE_PASSWORD:atelie}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  servlet:
+    multipart:
+      # Acima de atelie.storage.max-file-size: o limite de 5 MB e aplicado (422) pelo ObjectStorage.
+      # max-request-size = 6 imagens (ProductPayloadValidator.MAX_IMAGES_PER_PRODUCT) x 6 MB.
+      max-file-size: 6MB
+      max-request-size: 36MB
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: always
+    deserialization:
+      fail-on-unknown-properties: false
+      accept-float-as-int: false
+    # Jackson 3 (Spring Boot 4): opcoes de data ficam em datatype.datetime e as do gerador em write
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
+    write:
+      write-bigdecimal-as-plain: true
+  flyway:
+    enabled: true
+    schemas: outbox,accounts,catalog,orders
+    default-schema: accounts
+    create-schemas: true
+    locations: >-
+      classpath:db/migration/accounts,
+      classpath:db/migration/catalog,
+      classpath:db/migration/orders
+  autoconfigure:
+    exclude: org.springframework.modulith.events.amqp.RabbitEventExternalizerConfiguration
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1s
+          multiplier: 2.0
+          max-interval: 10s
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/atelie}
+          audiences: ${atelie.security.audience}
+
+atelie:
+  security:
+    audience: ${KEYCLOAK_AUDIENCE:atelie-core}
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  keycloak:
+    audience: ${KEYCLOAK_AUDIENCE:atelie-core}
+    base-url: ${KEYCLOAK_BASE_URL:http://localhost:8180}
+    realm: ${KEYCLOAK_REALM:atelie}
+    roles-client-id: ${KEYCLOAK_ROLES_CLIENT_ID:atelie-core-roles}
+    roles-client-secret: ${KEYCLOAK_ROLES_CLIENT_SECRET:}
+  storage:
+    max-file-size: 5MB
+  http:
+    connect-timeout: 2s
+    read-timeout: 3s
+  viacep:
+    base-url: ${VIACEP_BASE_URL:https://viacep.com.br}
+  events:
+    resubmit-interval: 1m
+    resubmit-min-age: 1m
+    max-resubmit-attempts: 5
+    confirm-timeout: 5s
+
+integrations:
+  rabbitmq:
+    exchange: ${AUDIT_RABBITMQ_EXCHANGE:atelie.audit}
