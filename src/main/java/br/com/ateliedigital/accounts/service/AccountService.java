@@ -76,6 +76,11 @@ public class AccountService {
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
     }
 
+    @Transactional(readOnly = true)
+    public AccountResponse getCurrentResponse(JwtAuthenticationToken authentication) {
+        return mapper.toResponse(getCurrent(authentication));
+    }
+
     @Transactional
     public AccountResponse updateCurrent(
             JwtAuthenticationToken authentication,
