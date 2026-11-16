@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 
 @Component
 public class ViaCepClient {
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ViaCepClient.class);
     private final RestClient restClient;
 
     public ViaCepClient(RestClient.Builder builder,
@@ -22,12 +23,13 @@ public class ViaCepClient {
         try {
             ViaCepResult result = restClient.get().uri("/ws/{cep}/json/", cep)
                     .retrieve().body(ViaCepResult.class);
-            if (result == null || result.erro()) {
+            if (result == null || Boolean.TRUE.equals(result.erro())) {
                 return new ZipCodeResponse(cep, null, null, null, null, null, false);
             }
             return new ZipCodeResponse(result.cep(), result.logradouro(), result.complemento(),
                     result.bairro(), result.localidade(), result.uf(), true);
         } catch (RuntimeException exception) {
+            log.warn("Falha ao consultar o ViaCEP para o CEP {}: {}", cep, exception.toString());
             return new ZipCodeResponse(cep, null, null, null, null, null, false);
         }
     }
