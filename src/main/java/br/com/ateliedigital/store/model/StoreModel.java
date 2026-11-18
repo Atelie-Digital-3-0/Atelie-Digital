@@ -14,7 +14,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @NoArgsConstructor
-@Table(name = "TB_STORE")
+@Table(name = "stores", schema = "store")
 public class StoreModel {
 
     @Id
