@@ -32,6 +32,7 @@ services:
       - "${KEYCLOAK_PORT:-8180}:8080"
     volumes:
       - ./infra/keycloack/realm-atelie-dev.json:/opt/keycloak/data/import/realm-atelie.json:ro
+      - ./infra/keycloack/themes/atelie:/opt/keycloak/themes/atelie:ro
     depends_on:
       - mailpit
 
