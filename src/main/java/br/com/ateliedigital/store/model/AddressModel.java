@@ -11,7 +11,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @NoArgsConstructor
-@Table(name = "TB_ADDRESS")
+@Table(name = "store_addresses", schema = "store")
 public class AddressModel {
 
     @Id
@@ -21,8 +21,8 @@ public class AddressModel {
     @Column(nullable = false, length = 255)
     private String street;
 
-    @Column(nullable = false)
-    private Integer number;
+    @Column(name = "address_number", nullable = false, length = 20)
+    private String number;
 
     @Column(nullable = false, length = 255)
     private String neighborhood;
