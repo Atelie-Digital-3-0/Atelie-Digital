@@ -1,0 +1,493 @@
+/*
+ * Tema de login do Atelie Digital (sobre o tema "keycloak").
+ * Replica o visual das telas de login/cadastro do atelie-front:
+ * paleta, Playfair Display, inputs/botoes em pilula e painel lateral com logo.
+ */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400..900&display=swap");
+
+:root {
+  --atelie-primary: #9e502b;
+  --atelie-primary-dark: #bc633d;
+  --atelie-surface: #f9f5f1;
+  --atelie-text: #1e1e1e;
+  --atelie-muted: rgba(30, 30, 30, 0.6);
+  --atelie-border: rgba(158, 80, 43, 0.2);
+  --atelie-gray: #d1d5db;
+  --atelie-danger: #d14343;
+  --atelie-font-title: "Playfair Display", serif;
+  --atelie-font-body: system-ui, sans-serif;
+}
+
+/* ---------- Base ---------- */
+html,
+body,
+.login-pf body {
+  background: var(--atelie-surface) !important;
+  background-image: none !important;
+  color: var(--atelie-text);
+  font-family: var(--atelie-font-body);
+}
+
+/* ---------- Layout em duas colunas (>= 1024px) ---------- */
+.login-pf-page {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+
+@media (min-width: 1024px) {
+  /* Coluna do formulario: metade esquerda */
+  .login-pf-page {
+    width: 50vw;
+    min-height: 100vh;
+    margin: 0;
+    padding: 48px 32px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  /* Painel direito com o logo (fixo) */
+  body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 50vw;
+    background: var(--atelie-primary) url("../img/logo-creme.svg") center / min(325px, 60%) no-repeat;
+    z-index: 0;
+  }
+
+  .login-pf-page {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* A marca ja aparece no painel */
+  #kc-header {
+    display: none;
+  }
+}
+
+/* No mobile nao ha painel: mostra a marca em texto */
+#kc-header-wrapper {
+  color: var(--atelie-primary) !important;
+  font-family: var(--atelie-font-title);
+  font-size: 28px !important;
+  font-weight: 700;
+  text-transform: none !important;
+  letter-spacing: 0;
+  line-height: 1.2;
+}
+
+/* ---------- Card sem moldura (como o formulario do front) ---------- */
+.card-pf {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  max-width: 448px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.login-pf-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+#kc-page-title,
+h1#kc-page-title {
+  color: var(--atelie-text);
+  font-family: var(--atelie-font-title);
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+}
+
+/* Seletor de idioma discreto */
+#kc-locale {
+  text-align: right;
+  margin-bottom: 8px;
+}
+
+#kc-current-locale-link {
+  color: var(--atelie-muted);
+  background: transparent;
+  border: 0;
+  font-size: 13px;
+}
+
+/* ---------- Campos (pilula) ---------- */
+label,
+.control-label,
+.pf-c-form__label,
+.pf-c-form__label-text {
+  color: var(--atelie-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+input.pf-c-form-control,
+.pf-c-form-control,
+.form-control,
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+select.pf-c-form-control {
+  box-sizing: border-box;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--atelie-surface);
+  border: 1px solid var(--atelie-border) !important;
+  border-radius: 9999px !important;
+  box-shadow: none;
+  color: var(--atelie-text);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.pf-c-form-control::placeholder {
+  color: rgba(30, 30, 30, 0.4);
+}
+
+.pf-c-form-control:focus,
+.form-control:focus,
+input:focus {
+  border-color: var(--atelie-primary) !important;
+  box-shadow: 0 0 0 2px rgba(158, 80, 43, 0.2) !important;
+}
+
+.pf-c-form-control[aria-invalid="true"] {
+  border-color: var(--atelie-danger) !important;
+}
+
+/* Campo de senha: botao de mostrar/ocultar dentro da pilula */
+.pf-c-input-group {
+  position: relative;
+  display: block;
+}
+
+.pf-c-input-group .pf-c-form-control {
+  width: 100%;
+  padding-right: 48px;
+}
+
+.pf-c-input-group .pf-c-button.pf-m-control {
+  position: absolute;
+  top: 0;
+  right: 4px;
+  height: 40px;
+  padding: 0 12px;
+  background: transparent !important;
+  border: 0 !important;
+  color: rgba(30, 30, 30, 0.5);
+}
+
+.pf-c-input-group .pf-c-button.pf-m-control:hover {
+  color: var(--atelie-primary);
+}
+
+.pf-c-form__helper-text,
+.pf-m-error,
+.kc-feedback-text,
+span.error,
+#input-error {
+  color: var(--atelie-danger);
+  font-size: 12px;
+}
+
+/* ---------- Botao primario (pilula) ---------- */
+.pf-c-button.pf-m-primary,
+.btn-primary,
+#kc-login,
+#kc-form-buttons .btn {
+  box-sizing: border-box;
+  width: 100%;
+  height: 40px;
+  background: var(--atelie-primary) !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-radius: 9999px !important;
+  color: #fff !important;
+  font-size: 14px;
+  font-weight: 500;
+  text-shadow: none;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.pf-c-button.pf-m-primary:hover,
+.pf-c-button.pf-m-primary:focus,
+.btn-primary:hover,
+#kc-login:hover {
+  background: var(--atelie-primary-dark) !important;
+}
+
+/* Botao secundario (ex.: cancelar) */
+.pf-c-button.pf-m-secondary,
+.btn-default {
+  border: 2px solid var(--atelie-primary);
+  border-radius: 9999px;
+  background: transparent;
+  color: var(--atelie-primary);
+}
+
+/* ---------- Links ---------- */
+a,
+a:visited {
+  color: var(--atelie-primary);
+  text-decoration: none;
+}
+
+a:hover,
+a:focus {
+  color: var(--atelie-primary-dark);
+  text-decoration: underline;
+}
+
+.login-pf-settings {
+  display: flex;
+  justify-content: flex-start;
+  font-size: 14px;
+}
+
+/* ---------- Divisor "Ou" + botao do Google ---------- */
+#kc-social-providers {
+  margin-top: 8px;
+}
+
+#kc-social-providers hr {
+  display: none;
+}
+
+#kc-social-providers h2 {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 16px;
+  color: var(--atelie-muted);
+  font-family: var(--atelie-font-body);
+  font-size: 14px;
+  font-weight: 400;
+  text-align: center;
+}
+
+#kc-social-providers h2::before,
+#kc-social-providers h2::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--atelie-gray);
+}
+
+#kc-social-providers ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#kc-social-providers a.kc-social-item,
+a.kc-social-item {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  height: 40px;
+  background: #fff !important;
+  border: 1px solid var(--atelie-gray) !important;
+  border-radius: 9999px !important;
+  color: var(--atelie-text) !important;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+#kc-social-providers a.kc-social-item:hover {
+  background: #f9fafb !important;
+}
+
+/* Icone do Google igual ao do front (substitui o glifo do Font Awesome) */
+#social-google .kc-social-provider-logo {
+  display: none;
+}
+
+#social-google::before {
+  content: "";
+  width: 20px;
+  height: 20px;
+  background: url("../img/google.svg") center / contain no-repeat;
+}
+
+/* ---------- Rodape de cadastro ---------- */
+#kc-info,
+#kc-info-wrapper,
+#kc-registration {
+  color: var(--atelie-muted);
+  font-size: 14px;
+  text-align: center;
+}
+
+#kc-registration a {
+  font-weight: 600;
+}
+
+/* ---------- Alertas ---------- */
+.alert,
+.pf-c-alert {
+  border-radius: 12px;
+}
+
+.alert-error {
+  background: #fdecea;
+  border-color: #e6a39b;
+}
+
+.alert-success {
+  background: #eef6ea;
+  border-color: #a9cf9a;
+}
+
+.alert-warning,
+.alert-info {
+  background: #fff7e3;
+  border-color: #c89e3a;
+}
+
+@media (max-width: 1023px) {
+  .card-pf {
+    padding: 0 8px;
+  }
+}
+
+/* ---------- Ajustes finos ---------- */
+.pf-c-input-group {
+  background: transparent !important;
+}
+
+.pf-c-input-group .pf-c-button.pf-m-control::before,
+.pf-c-input-group .pf-c-button.pf-m-control::after {
+  display: none !important;
+}
+
+.pf-c-input-group .pf-c-button.pf-m-control {
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+#social-google::before {
+  flex: none;
+  margin-right: 4px;
+}
+
+#social-google .kc-social-provider-name {
+  margin: 0;
+}
+
+#kc-info,
+.login-pf-signup {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 8px 0 0 !important;
+}
+
+.login-pf-header .subtitle,
+#kc-content-wrapper .subtitle {
+  display: block;
+  float: none;
+  text-align: right;
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--atelie-muted);
+}
+
+#kc-page-title,
+h1#kc-page-title {
+  clear: both;
+  width: 100%;
+  margin: 8px 0 16px;
+}
+
+/* ---------- Ajustes finos 2 ---------- */
+#kc-info-wrapper,
+#kc-registration-container,
+#kc-registration {
+  background: transparent !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+#kc-info {
+  max-width: 100%;
+}
+
+#social-google,
+a.kc-social-item {
+  display: flex !important;
+  gap: 10px;
+}
+
+a.kc-social-item::before,
+a.kc-social-item::after {
+  border: 0 !important;
+}
+
+a.kc-social-item::after {
+  display: none !important;
+}
+
+#kc-page-title,
+h1#kc-page-title {
+  display: block;
+  padding: 0 !important;
+  margin: 8px 0 16px !important;
+  text-align: center !important;
+}
+
+.login-pf-header {
+  padding: 0 !important;
+}
+
+/* ---------- Ajustes finos 3 ---------- */
+.login-pf-header [class*="col-"] {
+  float: none !important;
+  width: 100% !important;
+  padding: 0 !important;
+}
+
+.form-horizontal .form-group {
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.card-pf {
+  box-sizing: border-box;
+  width: 100%;
+}
+
+#social-google::before {
+  margin-right: 6px;
+}
+
+@media (max-width: 1023px) {
+  .login-pf-page {
+    padding: 24px 16px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+  #kc-header-wrapper {
+    text-align: center;
+  }
+}
