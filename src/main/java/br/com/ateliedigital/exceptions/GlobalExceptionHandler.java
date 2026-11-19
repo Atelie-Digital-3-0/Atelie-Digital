@@ -8,6 +8,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.validation.BindException;
@@ -63,6 +64,15 @@ public class GlobalExceptionHandler {
         String message = exception instanceof DataIntegrityViolationException
                 ? "Violation of integrity rule or data duplication" : exception.getMessage();
         return response(HttpStatus.CONFLICT, message, request);
+    }
+
+    /**
+     * Negado por {@code @PreAuthorize}: a excecao e lancada dentro do controller, portanto chega aqui antes do
+     * {@code ExceptionTranslationFilter}. Sem este handler cairia em {@link #unexpected} e viraria 500.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiError> accessDenied(AccessDeniedException exception, HttpServletRequest request) {
+        return response(HttpStatus.FORBIDDEN, "Access denied", request);
     }
 
     @ExceptionHandler(ResponseStatusException.class)
