@@ -13,6 +13,7 @@ public interface AddressMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "account", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
     Address toEntity(AddressRequest data);
 
 }

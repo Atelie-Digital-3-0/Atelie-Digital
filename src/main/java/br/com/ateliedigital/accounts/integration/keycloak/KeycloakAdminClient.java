@@ -118,17 +118,6 @@ public class KeycloakAdminClient {
                 .retrieve().toBodilessEntity();
     }
 
-//    public String mercadoPagoAccessToken(String userAccessToken) {
-//        Map<String, Object> body = restClient.get()
-//                .uri("/realms/{realm}/broker/mercado-pago/token", properties.realm())
-//                .headers(headers -> headers.setBearerAuth(userAccessToken))
-//                .retrieve().body(new ParameterizedTypeReference<>() { });
-//        if (body == null || body.get("access_token") == null) {
-//            throw new IllegalStateException("Mercado Pago access token is unavailable");
-//        }
-//        return body.get("access_token").toString();
-//    }
-
     private String adminToken() {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("grant_type", "client_credentials");

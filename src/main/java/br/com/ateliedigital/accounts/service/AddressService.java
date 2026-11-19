@@ -7,6 +7,7 @@ import br.com.ateliedigital.accounts.model.Account;
 import br.com.ateliedigital.accounts.model.Address;
 import br.com.ateliedigital.accounts.repository.AddressRepository;
 import br.com.ateliedigital.exceptions.ResourceNotFoundException;
+import br.com.ateliedigital.exceptions.RuleConflit;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
@@ -42,6 +43,11 @@ public class AddressService {
         Account account = accountService.getCurrent(authentication);
         Address address = mapper.toEntity(request);
         address.setAccount(account);
+        boolean duplicated = addressRepository.findAllByAccountId(account.getId()).stream()
+                .anyMatch(address::sameLocationAs);
+        if (duplicated) {
+            throw new RuleConflit("Address is already registered");
+        }
         if (request.main()) markOnlyMain(account.getId(), null);
 
         return mapper.toResponse(addressRepository.save(address));
@@ -56,6 +62,12 @@ public class AddressService {
         Account account = accountService.getCurrent(authentication);
         Address address = addressRepository.findByIdAndAccountId(addressId, account.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
+        Address requested = mapper.toEntity(request);
+        boolean duplicated = addressRepository.findAllByAccountId(account.getId()).stream()
+                .anyMatch(other -> !other.getId().equals(addressId) && other.sameLocationAs(requested));
+        if (duplicated) {
+            throw new RuleConflit("Address is already registered");
+        }
         if (request.main()) markOnlyMain(account.getId(), addressId);
 
         address.setZipCode(request.zipCode());
@@ -75,12 +87,22 @@ public class AddressService {
         Account account = accountService.getCurrent(authentication);
         Address address = addressRepository.findByIdAndAccountId(addressId, account.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Address not found"));
+        boolean wasMain = address.isMain();
         addressRepository.delete(address);
+        addressRepository.flush();
+        if (wasMain) {
+            // A conta com enderecos sempre mantem um principal: promove o mais antigo que restou.
+            addressRepository.findFirstByAccountIdOrderByCreatedAtAscIdAsc(account.getId())
+                    .ifPresent(next -> next.setMain(true));
+        }
     }
 
     private void markOnlyMain(UUID accountId, UUID exceptId) {
         addressRepository.findAllByAccountId(accountId).stream()
-                .filter(address -> exceptId == null || !address.getId().equals(exceptId))
+                .filter(address -> address.isMain() && (exceptId == null || !address.getId().equals(exceptId)))
                 .forEach(address -> address.setMain(false));
+        // O indice unico parcial (uk_addresses_one_main_per_account) e checado a cada comando e o Hibernate executa
+        // INSERTs antes de UPDATEs: persiste a remocao do status ANTES de gravar o novo principal.
+        addressRepository.flush();
     }
 }
