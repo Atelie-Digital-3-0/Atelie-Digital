@@ -96,6 +96,10 @@ atelie:
   http:
     connect-timeout: 2s
     read-timeout: 3s
+  account-completion:
+    # Cache local so de contas que JA existem (a ausencia nunca e cacheada). cache-max-size: 0 desativa o cache.
+    cache-ttl: 5m
+    cache-max-size: 10000
   viacep:
     base-url: ${VIACEP_BASE_URL:https://viacep.com.br}
   events:

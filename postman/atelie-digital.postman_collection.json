@@ -570,7 +570,51 @@
                 "me"
               ]
             },
-            "description": "No primeiro login com Google a conta local ainda nao existe (404); depois de PUT /me/complete retorna 200."
+            "description": "No primeiro login com Google a conta local ainda nao existe (404); depois de PUT /me/complete retorna 200. GET /me e uma das rotas liberadas pelo AccountCompletionInterceptor para quem ainda nao completou o cadastro."
+          }
+        },
+        {
+          "name": "[GOOGLE 3b] GET /me/addresses com token do Google (conta incompleta -> 403)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('403 ACCOUNT_INCOMPLETE (conta local ainda nao criada) ou 200 (ja completou)', () => pm.expect([200, 403]).to.include(pm.response.code));",
+                  "if (pm.response.code === 403) {",
+                  "  pm.test('Mensagem ACCOUNT_INCOMPLETE', () => pm.expect(pm.response.json().message).to.eql('ACCOUNT_INCOMPLETE'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_google}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses"
+              ]
+            },
+            "description": "Bloqueado pelo AccountCompletionInterceptor enquanto o usuario nao tiver conta local: 403 com message ACCOUNT_INCOMPLETE. O front deve levar o usuario ao formulario de PUT /api/accounts/me/complete. Se a conta ja foi completada em outra execucao, retorna 200."
           }
         },
         {
