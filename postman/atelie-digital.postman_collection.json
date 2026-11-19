@@ -27,15 +27,15 @@
     },
     {
       "key": "cpf_client",
-      "value": "11111111111"
+      "value": "52998224725"
     },
     {
       "key": "cpf_artisan",
-      "value": "22222222222"
+      "value": "11144477735"
     },
     {
       "key": "cpf_admin",
-      "value": "33333333333"
+      "value": "12345678909"
     },
     {
       "key": "token_client",
@@ -83,6 +83,14 @@
     },
     {
       "key": "token_google",
+      "value": ""
+    },
+    {
+      "key": "address_id_extra",
+      "value": ""
+    },
+    {
+      "key": "address_id_main",
       "value": ""
     }
   ],
@@ -665,7 +673,15 @@
                 "exec": [
                   "const n = Date.now().toString();",
                   "pm.collectionVariables.set('new_email', `maria.${n}@teste.dev`);",
-                  "pm.collectionVariables.set('new_cpf', n.slice(-11).padStart(11, '1'));"
+                  "// CPF valido (digitos verificadores) derivado do timestamp; a API rejeita CPF invalido com 400.",
+                  "const base = n.slice(-9).split('').map(Number);",
+                  "if (base.every(x => x === base[0])) base[8] = (base[8] + 1) % 10;",
+                  "for (const len of [9, 10]) {",
+                  "  const sum = base.slice(0, len).reduce((acc, dig, i) => acc + dig * (len + 1 - i), 0);",
+                  "  const dv = (sum * 10) % 11;",
+                  "  base.push(dv === 10 ? 0 : dv);",
+                  "}",
+                  "pm.collectionVariables.set('new_cpf', base.join(''));"
                 ]
               }
             },
@@ -797,7 +813,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"12/10/1990\",\n  \"cpf\": \"12345678901\",\n  \"email\": \"x@teste.dev\"\n}",
+              "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"12/10/1990\",\n  \"cpf\": \"12345678909\",\n  \"email\": \"x@teste.dev\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -843,7 +859,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"2999-01-01\",\n  \"cpf\": \"12345678901\",\n  \"email\": \"x@teste.dev\"\n}",
+              "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"2999-01-01\",\n  \"cpf\": \"12345678909\",\n  \"email\": \"x@teste.dev\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -898,7 +914,7 @@
           }
         },
         {
-          "name": "POST /api/accounts CPF invalido -> 400",
+          "name": "POST /api/accounts CPF com formato invalido -> 400",
           "event": [
             {
               "listen": "test",
@@ -934,6 +950,96 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"1990-10-12\",\n  \"cpf\": \"123\",\n  \"email\": \"x@teste.dev\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/accounts CPF com digitos verificadores invalidos -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"1990-10-12\",\n  \"cpf\": \"12345678901\",\n  \"email\": \"x@teste.dev\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "POST /api/accounts CPF com digitos repetidos -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "noauth"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Maria\",\n  \"last_name\": \"Silva\",\n  \"cellphone\": \"11977776666\",\n  \"date_of_birth\": \"1990-10-12\",\n  \"cpf\": \"11111111111\",\n  \"email\": \"x@teste.dev\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1310,6 +1416,64 @@
           }
         },
         {
+          "name": "[CLIENT] PUT /me/complete repetido -> nao duplica endereco",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const same = pm.response.json().addresses.filter(a => a.street === 'Praca da Se' && a.number === '100');",
+                  "pm.test('Endereco do cadastro aparece uma unica vez', () => pm.expect(same.length).to.eql(1));",
+                  "pm.test('Um unico endereco principal', () => pm.expect(pm.response.json().addresses.filter(a => a.main).length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Cliente\",\n  \"last_name\": \"Teste\",\n  \"cellphone\": \"11999990000\",\n  \"date_of_birth\": \"1995-05-20\",\n  \"bio\": \"Conta criada pela collection\",\n  \"cpf\": \"{{cpf_client}}\",\n  \"address\": {\n    \"zip_code\": \"01001000\",\n    \"street\": \"Praca da Se\",\n    \"number\": \"100\",\n    \"complement\": \"Sala 1\",\n    \"neighborhood\": \"Se\",\n    \"city\": \"Sao Paulo\",\n    \"state\": \"SP\",\n    \"main\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Repete o PUT /me/complete com o mesmo endereco: o endereco equivalente e reaproveitado em vez de criar uma duplicata."
+          }
+        },
+        {
           "name": "[CLIENT] GET /me (depois de completar)",
           "event": [
             {
@@ -1395,6 +1559,174 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"first_name\": \"Cliente\",\n  \"last_name\": \"Teste\",\n  \"cellphone\": \"11988887777\",\n  \"date_of_birth\": \"1995-05-20\",\n  \"email\": \"cliente@atelie.dev\",\n  \"bio\": \"Bio atualizada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[CLIENT] PATCH /me parcial (somente bio) -> demais campos preservados",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('Bio atualizada', () => pm.expect(j.bio).to.eql('Bio via patch parcial'));",
+                  "pm.test('Demais campos preservados', () => {",
+                  "  pm.expect(j.first_name).to.eql('Cliente');",
+                  "  pm.expect(j.cellphone).to.eql('11988887777');",
+                  "  pm.expect(j.email).to.eql('cliente@atelie.dev');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Bio via patch parcial\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Todos os campos do PATCH sao opcionais: so o que for enviado e alterado."
+          }
+        },
+        {
+          "name": "[CLIENT] PATCH /me payload vazio -> 200 sem alterar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nada alterado', () => pm.expect(pm.response.json().bio).to.eql('Bio via patch parcial'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[CLIENT] PATCH /me first_name em branco -> 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"   \"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -1511,6 +1843,62 @@
           }
         },
         {
+          "name": "[CLIENT] POST /me/addresses duplicado -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem de endereco duplicado', () => pm.expect(pm.response.json().message).to.eql('Address is already registered'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zip_code\": \"20040020\",\n  \"street\": \"Rua da Assembleia\",\n  \"number\": \"10\",\n  \"complement\": \"Sala 1\",\n  \"neighborhood\": \"Se\",\n  \"city\": \"Rio de Janeiro\",\n  \"state\": \"RJ\",\n  \"main\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Mesmo endereco do request anterior: a API recusa duplicatas (mesmo CEP, rua, numero, complemento, bairro, cidade e UF)."
+          }
+        },
+        {
           "name": "[CLIENT] PUT /me/addresses/:id",
           "event": [
             {
@@ -1564,6 +1952,63 @@
                 }
               }
             }
+          }
+        },
+        {
+          "name": "[CLIENT] PUT /me/addresses/:id igual a outro endereco -> 409",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Mensagem de endereco duplicado', () => pm.expect(pm.response.json().message).to.eql('Address is already registered'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses/{{address_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses",
+                "{{address_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zip_code\": \"01001000\",\n  \"street\": \"Praca da Se\",\n  \"number\": \"100\",\n  \"complement\": \"Sala 1\",\n  \"neighborhood\": \"Se\",\n  \"city\": \"Sao Paulo\",\n  \"state\": \"SP\",\n  \"main\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Tenta deixar este endereco igual ao do cadastro (Praca da Se, 100), que ja existe na conta: a API recusa duplicatas."
           }
         },
         {
@@ -1688,6 +2133,214 @@
                 "me",
                 "addresses",
                 "{{address_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "[CLIENT] POST /me/addresses (secundario, para teste de promocao)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('address_id_extra', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"zip_code\": \"20040020\",\n  \"street\": \"Rua da Assembleia\",\n  \"number\": \"10\",\n  \"complement\": \"Sala 1\",\n  \"neighborhood\": \"Se\",\n  \"city\": \"Rio de Janeiro\",\n  \"state\": \"RJ\",\n  \"main\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "[CLIENT] DELETE endereco principal -> 204",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// descobre o id do endereco principal atual antes de remove-lo",
+                  "pm.sendRequest({",
+                  "  url: pm.variables.replaceIn('{{base_url}}/api/accounts/me/addresses?page=0&size=50'),",
+                  "  method: 'GET',",
+                  "  header: { Authorization: 'Bearer ' + pm.collectionVariables.get('token_client') }",
+                  "}, (err, res) => {",
+                  "  const main = (res.json().content || []).find(a => a.main);",
+                  "  pm.collectionVariables.set('address_id_main', main ? main.id : '00000000-0000-0000-0000-000000000000');",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses/{{address_id_main}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses",
+                "{{address_id_main}}"
+              ]
+            },
+            "description": "Remove o endereco principal; a API promove outro endereco da conta a principal."
+          }
+        },
+        {
+          "name": "[CLIENT] GET /me/addresses (outro endereco foi promovido a principal)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const content = pm.response.json().content;",
+                  "pm.test('Ainda ha enderecos', () => pm.expect(content.length).to.be.above(0));",
+                  "pm.test('Exatamente um endereco principal', () => pm.expect(content.filter(a => a.main).length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "[CLIENT] DELETE endereco secundario (limpeza) -> 204",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/addresses/{{address_id_extra}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "addresses",
+                "{{address_id_extra}}"
               ]
             }
           }

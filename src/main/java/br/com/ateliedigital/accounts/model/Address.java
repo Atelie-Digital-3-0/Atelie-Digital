@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -43,4 +44,23 @@ public class Address {
 
     @Column(name = "is_main", nullable = false)
     private boolean main;
+
+    /** Preenchido pelo banco (default now()); usado so para ordenar por antiguidade. */
+    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
+    private Instant createdAt;
+
+    /** Mesmo local (ignora caixa e espacos nas pontas); {@code main} e identificadores nao entram na comparacao. */
+    public boolean sameLocationAs(Address other) {
+        return same(zipCode, other.zipCode) && same(street, other.street) && same(number, other.number)
+                && same(complement, other.complement) && same(neighborhood, other.neighborhood)
+                && same(city, other.city) && same(state, other.state);
+    }
+
+    private static boolean same(String a, String b) {
+        return normalize(a).equalsIgnoreCase(normalize(b));
+    }
+
+    private static String normalize(String value) {
+        return value == null ? "" : value.trim();
+    }
 }

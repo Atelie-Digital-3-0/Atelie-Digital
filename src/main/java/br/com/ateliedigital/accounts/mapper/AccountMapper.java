@@ -5,9 +5,11 @@ import br.com.ateliedigital.accounts.dto.AccountRequests.UpdateAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountRequests.CreateAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountResponses.AccountResponse;
 import br.com.ateliedigital.accounts.model.Account;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(componentModel = "spring")
 public interface AccountMapper {
@@ -21,6 +23,7 @@ public interface AccountMapper {
     @Mapping(target = "keycloakId", ignore = true)
     @Mapping(target = "cpf", ignore = true)
     @Mapping(target = "addresses", ignore = true)
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntity(UpdateAccountRequest data, @MappingTarget Account account);
 
     @Mapping(target = "id", ignore = true)
