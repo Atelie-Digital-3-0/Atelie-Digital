@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
-import tools.jackson.databind.JsonNode;
+import java.util.Map;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -32,7 +32,7 @@ public class OutboxEvent {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
-    private JsonNode payload;
+    private Map<String, Object> payload;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
