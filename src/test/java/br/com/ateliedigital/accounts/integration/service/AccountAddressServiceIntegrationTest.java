@@ -1,36 +1,24 @@
-package br.com.ateliedigital.accounts;
+package br.com.ateliedigital.accounts.integration.service;
 
 import br.com.ateliedigital.accounts.dto.AccountRequests.CompleteAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountRequests.UpdateAccountRequest;
 import br.com.ateliedigital.accounts.dto.AccountResponses.AccountResponse;
 import br.com.ateliedigital.accounts.dto.AddressRequests.AddressRequest;
 import br.com.ateliedigital.accounts.dto.AddressResponses.AddressResponse;
-import br.com.ateliedigital.accounts.event.AccountAuditPublisher;
-import br.com.ateliedigital.accounts.integration.keycloak.KeycloakAdminClient;
 import br.com.ateliedigital.accounts.service.AccountService;
 import br.com.ateliedigital.accounts.service.AddressService;
 import br.com.ateliedigital.exceptions.RuleConflit;
+import br.com.ateliedigital.support.PostgresIntegrationTest;
+import br.com.ateliedigital.support.TestUser;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.postgresql.PostgreSQLContainer;
-import org.testcontainers.utility.DockerImageName;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,15 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Roda os servicos contra um Postgres real: valida a constraint de endereco principal (indice unico parcial),
  * a ordem dos comandos SQL (o indice e checado a cada comando) e o complete idempotente.
  */
-@SpringBootTest
-@Testcontainers
-class AccountAddressIntegrationTest {
-    @Container
-    @ServiceConnection
-    static PostgreSQLContainer postgres = new PostgreSQLContainer(DockerImageName.parse("postgres:16"));
-
-    @MockitoBean KeycloakAdminClient keycloak;
-    @MockitoBean AccountAuditPublisher auditPublisher;
+class AccountAddressServiceIntegrationTest extends PostgresIntegrationTest {
 
     @Autowired AccountService accountService;
     @Autowired AddressService addressService;
@@ -238,24 +218,8 @@ class AccountAddressIntegrationTest {
     private static String currentCpf;
 
     private static JwtAuthenticationToken newUser() {
-        currentCpf = randomValidCpf();
-        UUID sub = UUID.randomUUID();
-        Instant now = Instant.now();
-        Jwt jwt = new Jwt("token", now, now.plusSeconds(60), Map.of("alg", "none"),
-                Map.of("sub", sub.toString(), "email", "user." + sub + "@teste.dev"));
-        return new JwtAuthenticationToken(jwt);
-    }
-
-    private static String randomValidCpf() {
-        StringBuilder cpf = new StringBuilder();
-        for (int i = 0; i < 9; i++) cpf.append(ThreadLocalRandom.current().nextInt(10));
-        if (cpf.chars().distinct().count() == 1) return randomValidCpf();
-        for (int length = 9; length <= 10; length++) {
-            int sum = 0;
-            for (int i = 0; i < length; i++) sum += (cpf.charAt(i) - '0') * (length + 1 - i);
-            int digit = sum * 10 % 11;
-            cpf.append(digit == 10 ? 0 : digit);
-        }
-        return cpf.toString();
+        TestUser user = TestUser.random();
+        currentCpf = user.cpf();
+        return user.token();
     }
 }
