@@ -17,6 +17,20 @@ services:
       timeout: 3s
       retries: 10
 
+  # Carrinhos (modulo cart). Sem expiracao das chaves: o AOF persiste os dados entre reinicios.
+  redis:
+    image: redis:7.4-alpine
+    command: [ "redis-server", "--appendonly", "yes" ]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   keycloak:
     image: quay.io/keycloak/keycloak:26.2
     command: [ "start-dev", "--import-realm" ]
@@ -46,3 +60,4 @@ services:
 
 volumes:
   postgres-data:
+  redis-data:
