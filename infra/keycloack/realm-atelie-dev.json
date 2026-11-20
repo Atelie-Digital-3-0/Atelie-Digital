@@ -1,7 +1,11 @@
 {
   "realm": "atelie",
   "enabled": true,
-  "displayName": "Atelie Digital",
+  "displayName": "Ateliê Digital",
+  "loginTheme": "atelie",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["pt-BR", "en"],
+  "defaultLocale": "pt-BR",
   "sslRequired": "none",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
@@ -156,6 +160,7 @@
         }
       ],
       "realmRoles": [
+        "default-roles-atelie",
         "CLIENT"
       ]
     },
@@ -174,6 +179,7 @@
         }
       ],
       "realmRoles": [
+        "default-roles-atelie",
         "ARTISAN",
         "CLIENT"
       ]
@@ -193,6 +199,7 @@
         }
       ],
       "realmRoles": [
+        "default-roles-atelie",
         "ADMIN",
         "CLIENT"
       ]

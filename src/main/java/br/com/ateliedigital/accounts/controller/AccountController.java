@@ -43,7 +43,7 @@ public class AccountController {
     @GetMapping("/me")
     @PreAuthorize("hasAnyRole('CLIENT', 'ARTISAN', 'ADMIN')")
     public ResponseEntity<AccountResponse> getCurrent(JwtAuthenticationToken authentication) {
-        return ResponseEntity.ok(mapper.toResponse(accountService.getCurrent(authentication)));
+        return ResponseEntity.ok(accountService.getCurrentResponse(authentication));
     }
 
     @PutMapping("/me/complete")

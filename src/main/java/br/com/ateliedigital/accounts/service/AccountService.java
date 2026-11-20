@@ -76,13 +76,19 @@ public class AccountService {
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found"));
     }
 
+    @Transactional(readOnly = true)
+    public AccountResponse getCurrentResponse(JwtAuthenticationToken authentication) {
+        return mapper.toResponse(getCurrent(authentication));
+    }
+
     @Transactional
     public AccountResponse updateCurrent(
             JwtAuthenticationToken authentication,
             UpdateAccountRequest request
     ) {
         Account account = getCurrent(authentication);
-        boolean emailChanged = !account.getEmail().equalsIgnoreCase(request.email());
+        // PATCH parcial: campos ausentes (null) nao alteram a conta.
+        boolean emailChanged = request.email() != null && !account.getEmail().equalsIgnoreCase(request.email());
         if (emailChanged && accountRepository.existsByEmailIgnoreCase(request.email())) {
             throw new RuleConflit("Email is already registered");
         }
@@ -133,13 +139,7 @@ public class AccountService {
         }
 
         mapper.completeEntity(request, account);
-        Address address = addressMapper.toEntity(request.address());
-        if (account.getAddresses().isEmpty()) {
-            address.setMain(true);
-        } else if (address.isMain()) {
-            account.getAddresses().forEach(existing -> existing.setMain(false));
-        }
-        account.addAddress(address);
+        applyCompletionAddress(account, addressMapper.toEntity(request.address()));
 
         Account saved = accountRepository.save(account);
 
@@ -150,6 +150,44 @@ public class AccountService {
         }
 
         return mapper.toResponse(saved);
+    }
+
+    /**
+     * O endereco do formulario de cadastro e idempotente: se a conta ja tem um endereco equivalente ele e reaproveitado
+     * (repetir o {@code PUT /me/complete} nao cria duplicatas); caso contrario e adicionado.
+     */
+    private void applyCompletionAddress(Account account, Address address) {
+        Address existing = account.getAddresses().stream()
+                .filter(address::sameLocationAs)
+                .findFirst()
+                .orElse(null);
+        if (existing != null) {
+            if (address.isMain() && !existing.isMain()) {
+                demoteMainAddresses(account, existing);
+                existing.setMain(true);
+            }
+            return;
+        }
+        if (account.getAddresses().isEmpty()) {
+            address.setMain(true);
+        } else if (address.isMain()) {
+            demoteMainAddresses(account, null);
+        }
+        account.addAddress(address);
+    }
+
+    /** Remove o status de principal dos demais e o persiste antes do novo principal (indice unico parcial). */
+    private void demoteMainAddresses(Account account, Address except) {
+        boolean changed = false;
+        for (Address current : account.getAddresses()) {
+            if (current != except && current.isMain()) {
+                current.setMain(false);
+                changed = true;
+            }
+        }
+        if (changed) {
+            accountRepository.flush();
+        }
     }
 
     public void grantArtisanRole(UUID keycloakId) {

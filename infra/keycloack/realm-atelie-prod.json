@@ -1,7 +1,11 @@
 {
   "realm": "atelie",
   "enabled": true,
-  "displayName": "Atelie Digital",
+  "displayName": "Ateliê Digital",
+  "loginTheme": "atelie",
+  "internationalizationEnabled": true,
+  "supportedLocales": ["pt-BR", "en"],
+  "defaultLocale": "pt-BR",
   "sslRequired": "external",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,

@@ -13,4 +13,6 @@ public interface AddressRepository extends JpaRepository<Address, UUID> {
     Page<Address> findAllByAccountId(UUID accountId, Pageable pageable);
     List<Address> findAllByAccountId(UUID accountId);
     Optional<Address> findByIdAndAccountId(UUID id, UUID accountId);
+    /** Endereco mais antigo da conta; candidato a principal quando o principal e removido. */
+    Optional<Address> findFirstByAccountIdOrderByCreatedAtAscIdAsc(UUID accountId);
 }
