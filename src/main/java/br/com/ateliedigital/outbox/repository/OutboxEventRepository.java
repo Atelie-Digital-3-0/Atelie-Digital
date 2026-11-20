@@ -24,7 +24,7 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, UUID> 
                 status = 'PROCESSING'
                 AND locked_until <= :now
             )
-            ORDER BY created_at ASC
+            ORDER BY created_at ASC, id ASC
             LIMIT :batchSize
             FOR UPDATE SKIP LOCKED
             """, nativeQuery = true)
