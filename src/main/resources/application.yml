@@ -45,13 +45,14 @@ spring:
       write-bigdecimal-as-plain: true
   flyway:
     enabled: true
-    schemas: outbox,accounts,catalog,orders
+    schemas: outbox,accounts,catalog,orders,store
     default-schema: accounts
     create-schemas: true
     locations: >-
       classpath:db/migration/accounts,
       classpath:db/migration/catalog,
-      classpath:db/migration/orders
+      classpath:db/migration/orders, 
+      classpath:db/migration/store
   autoconfigure:
     exclude: org.springframework.modulith.events.amqp.RabbitEventExternalizerConfiguration
   rabbitmq:
