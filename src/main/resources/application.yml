@@ -95,6 +95,9 @@ atelie:
     roles-client-secret: ${KEYCLOAK_ROLES_CLIENT_SECRET:}
   storage:
     max-file-size: 5MB
+  outbox:
+    enabled: true
+    poll-interval-ms: 5000
   http:
     connect-timeout: 2s
     read-timeout: 3s
