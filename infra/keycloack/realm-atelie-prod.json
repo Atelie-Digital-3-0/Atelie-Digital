@@ -3,6 +3,7 @@
   "enabled": true,
   "displayName": "Ateliê Digital",
   "loginTheme": "atelie",
+  "emailTheme": "atelie",
   "internationalizationEnabled": true,
   "supportedLocales": ["pt-BR", "en"],
   "defaultLocale": "pt-BR",
