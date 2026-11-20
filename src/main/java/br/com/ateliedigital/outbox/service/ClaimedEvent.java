@@ -1,6 +1,7 @@
 package br.com.ateliedigital.outbox.service;
-import tools.jackson.databind.JsonNode;
 
+
+import java.util.Map;
 import java.util.UUID;
 
 //objeto para transportar os dados de um evento reservado pelo processamento
@@ -9,7 +10,7 @@ public record ClaimedEvent(
         String aggregateType,
         UUID aggregateId,
         String eventType,
-        JsonNode payload,
+        Map<String, Object> payload,
         int attempts,
         int maxAttempts
 ) {

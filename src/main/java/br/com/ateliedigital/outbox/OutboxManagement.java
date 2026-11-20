@@ -7,6 +7,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
+import tools.jackson.core.type.TypeReference;
+import java.util.Map;
+
 import java.util.UUID;
 
 @Service
@@ -34,7 +37,12 @@ public class OutboxManagement {
         event.setAggregateType(aggregateType);
         event.setAggregateId(aggregateId);
         event.setEventType(eventType);
-        event.setPayload(objectMapper.valueToTree(payload));
+        Map<String, Object> payloadMap = objectMapper.convertValue(
+                payload,
+                new TypeReference<Map<String, Object>>() {}
+        );
+
+        event.setPayload(payloadMap);
 
         repository.save(event);
     }
