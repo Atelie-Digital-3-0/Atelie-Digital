@@ -27,10 +27,13 @@ public interface StoreMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
-    @Mapping(target = "address", source = "address")
+    @BeanMapping(
+            nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+    )
     void updateEntity(StoreRequests.UpdateStoreRequest request, @MappingTarget StoreModel store);
 
-    // Correção do Relacionamento Bidirecional
+
+    //  Relacionamento Bidirecional na criação
     @AfterMapping
     default void linkAddressToStore(StoreRequests.CreateStoreRequest request, @MappingTarget StoreModel store) {
         if (store.getAddress() != null) {
