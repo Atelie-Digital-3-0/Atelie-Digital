@@ -1,4 +1,4 @@
-package br.com.ateliedigital.outbox.models;
+package br.com.ateliedigital.outbox.model;
 
 public enum OutboxStatus {
     PENDING,
