@@ -14,4 +14,13 @@ public class StoreAddressResponses {
             String zipCode,
             String complement
     ) {}
+
+    public record ZipCodeLookupResponse(
+            String zipCode,
+            String street,
+            String neighborhood,
+            String city,
+            String state,
+            String complement
+    ) {}
 }
