@@ -112,6 +112,9 @@ atelie:
     max-quantity-per-item: 99
     max-distinct-items: 50
     key-prefix: "cart:"
+  catalog:
+    # Catalogo consultado pelo carrinho para validar os produtos (atelie-catalog-api).
+    base-url: ${CATALOG_API_BASE_URL:http://localhost:8008/api/v1/catalog}
   events:
     resubmit-interval: 1m
     resubmit-min-age: 1m

@@ -1,5 +1,6 @@
 package br.com.ateliedigital.cart.config;
 
+import br.com.ateliedigital.cart.integration.catalog.CatalogProperties;
 import br.com.ateliedigital.cart.model.CartItem;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -12,7 +13,7 @@ import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
-@EnableConfigurationProperties(CartProperties.class)
+@EnableConfigurationProperties({CartProperties.class, CatalogProperties.class})
 public class CartConfiguration {
 
     /**
