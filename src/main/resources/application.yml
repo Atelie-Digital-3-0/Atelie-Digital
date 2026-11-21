@@ -107,6 +107,11 @@ atelie:
     cache-max-size: 10000
   viacep:
     base-url: ${VIACEP_BASE_URL:https://viacep.com.br}
+  cart:
+    # Carrinhos ficam no Redis (hash <key-prefix><keycloakId>) sem expiracao.
+    max-quantity-per-item: 99
+    max-distinct-items: 50
+    key-prefix: "cart:"
   events:
     resubmit-interval: 1m
     resubmit-min-age: 1m
