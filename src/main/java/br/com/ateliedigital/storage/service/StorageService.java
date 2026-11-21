@@ -6,8 +6,11 @@ import br.com.ateliedigital.storage.config.StorageProperties;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -39,6 +42,7 @@ public class StorageService {
      * @param prefix logical storage prefix (e.g. stores/123/logo)
      * @return generated object key
      */
+
     public String upload(MultipartFile file, String prefix) {
         validateFile(file);
 
@@ -61,9 +65,20 @@ public class StorageService {
 
         try (InputStream inputStream = file.getInputStream()) {
 
+            byte[] signature = inputStream.readNBytes(
+                    signatureLength(contentType)
+            );
+
+            validateFileSignature(contentType, signature);
+
+            InputStream completeInputStream = new SequenceInputStream(
+                    new ByteArrayInputStream(signature),
+                    inputStream
+            );
+
             objectStorage.upload(
                     objectKey,
-                    inputStream,
+                    completeInputStream,
                     file.getSize(),
                     contentType
             );
@@ -77,6 +92,67 @@ public class StorageService {
             );
         }
     }
+
+    private void validateFileSignature(
+            String contentType,
+            byte[] signature
+    ) {
+        boolean validSignature = switch (contentType) {
+            case "image/jpeg" -> Arrays.equals(
+                    signature,
+                    new byte[]{
+                            (byte) 0xFF,
+                            (byte) 0xD8,
+                            (byte) 0xFF
+                    }
+            );
+
+            case "image/png" -> Arrays.equals(
+                    signature,
+                    new byte[]{
+                            (byte) 0x89,
+                            0x50,
+                            0x4E,
+                            0x47,
+                            0x0D,
+                            0x0A,
+                            0x1A,
+                            0x0A
+                    }
+            );
+
+            case "image/webp" ->
+                    signature.length == 12
+                            && signature[0] == 'R'
+                            && signature[1] == 'I'
+                            && signature[2] == 'F'
+                            && signature[3] == 'F'
+                            && signature[8] == 'W'
+                            && signature[9] == 'E'
+                            && signature[10] == 'B'
+                            && signature[11] == 'P';
+
+            default -> false;
+        };
+
+        if (!validSignature) {
+            throw new VioletedRule(
+                    "File content does not match the declared content type"
+            );
+        }
+    }
+
+
+    private int signatureLength(String contentType) {
+        return switch (contentType) {
+            case "image/jpeg" -> 3;
+            case "image/png" -> 8;
+            case "image/webp" -> 12;
+            default -> throw new VioletedRule("Unsupported file type");
+        };
+    }
+
+
 
     /**
      * Downloads an object from storage.

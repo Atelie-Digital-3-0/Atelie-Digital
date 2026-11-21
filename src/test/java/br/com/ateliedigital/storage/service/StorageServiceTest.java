@@ -19,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,6 +30,28 @@ import static org.mockito.Mockito.*;
 public class StorageServiceTest {
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
+    private static final byte[] JPEG_SIGNATURE = {
+            (byte) 0xFF, (byte) 0xD8, (byte) 0xFF
+    };
+
+    private static final byte[] PNG_SIGNATURE = {
+            (byte) 0x89, 0x50, 0x4E, 0x47,
+            0x0D, 0x0A, 0x1A, 0x0A
+    };
+
+    private static final byte[] WEBP_SIGNATURE = {
+            'R', 'I', 'F', 'F', 0, 0, 0, 0,
+            'W', 'E', 'B', 'P'
+    };
+    private byte[] fileContent(byte[] signature) {
+        byte[] content = Arrays.copyOf(signature, signature.length + 3);
+
+        content[signature.length] = 1;
+        content[signature.length + 1] = 2;
+        content[signature.length + 2] = 3;
+
+        return content;
+    }
 
     @Mock
     private ObjectStorage objectStorage;
@@ -58,7 +81,7 @@ public class StorageServiceTest {
                 "file",
                 "photo.jpg",
                 "image/jpeg",
-                new byte[]{1, 2, 3}
+                fileContent(JPEG_SIGNATURE)
         );
 
         String result = storageService.upload(file, "stores/42/logo");
@@ -71,7 +94,7 @@ public class StorageServiceTest {
         verify(objectStorage).upload(
                 eq(result),
                 any(InputStream.class),
-                eq(3L),
+                eq((long) fileContent(JPEG_SIGNATURE).length),
                 eq("image/jpeg")
         );
     }
@@ -82,7 +105,7 @@ public class StorageServiceTest {
                 "file",
                 "photo.png",
                 "image/png",
-                new byte[]{1, 2, 3}
+                fileContent(PNG_SIGNATURE)
         );
 
         String result = storageService.upload(file, "products/10/images");
@@ -92,7 +115,7 @@ public class StorageServiceTest {
         verify(objectStorage).upload(
                 eq(result),
                 any(InputStream.class),
-                eq(3L),
+                eq((long) fileContent(PNG_SIGNATURE).length),
                 eq("image/png")
         );
     }
@@ -103,7 +126,7 @@ public class StorageServiceTest {
                 "file",
                 "photo.webp",
                 "image/webp",
-                new byte[]{1, 2, 3}
+                fileContent(WEBP_SIGNATURE)
         );
 
         String result = storageService.upload(file, "products/10/images");
@@ -113,7 +136,7 @@ public class StorageServiceTest {
         verify(objectStorage).upload(
                 eq(result),
                 any(InputStream.class),
-                eq(3L),
+                eq((long) fileContent(WEBP_SIGNATURE).length),
                 eq("image/webp")
         );
     }
@@ -124,7 +147,7 @@ public class StorageServiceTest {
                 "file",
                 "photo.jpg",
                 "image/jpeg; charset=binary",
-                new byte[]{1, 2, 3}
+                fileContent(JPEG_SIGNATURE)
         );
 
         String result = storageService.upload(file, "stores/42/logo");
@@ -132,7 +155,7 @@ public class StorageServiceTest {
         verify(objectStorage).upload(
                 eq(result),
                 any(InputStream.class),
-                eq(3L),
+                eq((long) fileContent(JPEG_SIGNATURE).length),
                 eq("image/jpeg")
         );
     }
@@ -183,11 +206,21 @@ public class StorageServiceTest {
 
     @Test
     void shouldAcceptFileAtMaximumAllowedSize() {
+        byte[] content = new byte[(int) MAX_FILE_SIZE];
+
+        System.arraycopy(
+                JPEG_SIGNATURE,
+                0,
+                content,
+                0,
+                JPEG_SIGNATURE.length
+        );
         MockMultipartFile file = new MockMultipartFile(
                 "file",
                 "maximum.jpg",
                 "image/jpeg",
-                new byte[(int) MAX_FILE_SIZE]
+                content
+
         );
 
         String result = storageService.upload(file, "stores/42/logo");
@@ -252,7 +285,7 @@ public class StorageServiceTest {
                 "file",
                 "photo.jpg",
                 "image/jpeg",
-                new byte[]{1, 2, 3}
+                fileContent(JPEG_SIGNATURE)
         );
 
         assertThrows(
@@ -269,7 +302,7 @@ public class StorageServiceTest {
                 "file",
                 "photo.jpg",
                 "image/jpeg",
-                new byte[]{1, 2, 3}
+                fileContent(JPEG_SIGNATURE)
         );
 
         assertThrows(
@@ -385,4 +418,86 @@ public class StorageServiceTest {
 
         verify(objectStorage).getPublicUrl(objectKey);
     }
+
+
+    @Test
+    void shouldRejectFileWhenDeclaredContentTypeDoesNotMatchSignature() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                "image/jpeg",
+                fileContent(PNG_SIGNATURE)
+        );
+
+        assertThrows(
+                VioletedRule.class,
+                () -> storageService.upload(file, "stores/42/logo")
+        );
+
+        verifyNoInteractions(objectStorage);
+    }
+
+    @Test
+    void shouldRejectFileWithInvalidSignature() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                "image/jpeg",
+                new byte[]{1, 2, 3, 4, 5}
+        );
+
+        assertThrows(
+                VioletedRule.class,
+                () -> storageService.upload(file, "stores/42/logo")
+        );
+
+        verifyNoInteractions(objectStorage);
+    }
+
+    @Test
+    void shouldRejectFileSmallerThanRequiredSignature() {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "photo.png",
+                "image/png",
+                new byte[]{(byte) 0x89, 0x50, 0x4E}
+        );
+
+        assertThrows(
+                VioletedRule.class,
+                () -> storageService.upload(file, "stores/42/logo")
+        );
+
+        verifyNoInteractions(objectStorage);
+    }
+
+    @Test
+    void shouldUploadCompleteFileIncludingSignatureBytes() throws IOException {
+        byte[] expectedContent = fileContent(JPEG_SIGNATURE);
+
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                "image/jpeg",
+                expectedContent
+        );
+
+        byte[][] uploadedContent = new byte[1][];
+
+        doAnswer(invocation -> {
+            InputStream inputStream = invocation.getArgument(1);
+            uploadedContent[0] = inputStream.readAllBytes();
+            return null;
+        }).when(objectStorage).upload(
+                any(String.class),
+                any(InputStream.class),
+                eq((long) expectedContent.length),
+                eq("image/jpeg")
+        );
+
+        storageService.upload(file, "stores/42/logo");
+
+        assertArrayEquals(expectedContent, uploadedContent[0]);
+    }
+
 }
