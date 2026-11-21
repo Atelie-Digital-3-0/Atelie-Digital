@@ -24,6 +24,7 @@ public interface StoreMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "artisanId", ignore = true)
     @Mapping(target = "category", ignore = true)
+    @Mapping(target = "address", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "deletedAt", ignore = true)
