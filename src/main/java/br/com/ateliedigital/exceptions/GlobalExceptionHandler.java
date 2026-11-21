@@ -92,6 +92,23 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error on {}", request.getRequestURI(), exception);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error when processing the request", request);
     }
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ApiError> storageError(
+            StorageException exception,
+            HttpServletRequest request
+    ) {
+        log.error(
+                "Storage operation failed on {}",
+                request.getRequestURI(),
+                exception
+        );
+
+        return response(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Storage service is temporarily unavailable",
+                request
+        );
+    }
 
     private ResponseEntity<ApiError> response(HttpStatus status, String message, HttpServletRequest request) {
         return ResponseEntity.status(status).body(new ApiError(Instant.now(), status.value(), message, request.getRequestURI()));
