@@ -18,8 +18,9 @@ import java.io.InputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Objects;
+
 import java.util.stream.Collectors;
+import br.com.ateliedigital.exceptions.StorageException;
 
 @Service
 public class MinioObjectStorage implements ObjectStorage {
@@ -66,7 +67,7 @@ public class MinioObjectStorage implements ObjectStorage {
                             .build()
             );
         } catch (Exception exception) {
-            throw new RuntimeException(
+            throw new StorageException(
                     "Failed to upload object: " + objectKey,
                     exception
             );
@@ -109,13 +110,13 @@ public class MinioObjectStorage implements ObjectStorage {
                 );
             }
 
-            throw new RuntimeException(
+            throw new StorageException(
                     "Failed to download object: " + objectKey,
                     exception
             );
 
         } catch (Exception exception) {
-            throw new RuntimeException(
+            throw new StorageException(
                     "Failed to download object: " + objectKey,
                     exception
             );
@@ -134,7 +135,7 @@ public class MinioObjectStorage implements ObjectStorage {
                             .build()
             );
         } catch (Exception exception) {
-            throw new RuntimeException(
+            throw new StorageException(
                     "Failed to delete object: " + objectKey,
                     exception
             );
@@ -160,18 +161,19 @@ public class MinioObjectStorage implements ObjectStorage {
                 return false;
             }
 
-            throw new RuntimeException(
+            throw new StorageException(
                     "Failed to check object existence: " + objectKey,
                     exception
             );
 
         } catch (Exception exception) {
-            throw new RuntimeException(
+            throw new StorageException(
                     "Failed to check object existence: " + objectKey,
                     exception
             );
         }
     }
+
 
     @Override
     public String getPublicUrl(String objectKey) {
