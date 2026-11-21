@@ -98,7 +98,7 @@ atelie:
     public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
     access-key: ${MINIO_ACCESS_KEY}
     secret-key: ${MINIO_SECRET_KEY}
-    bucket: ${MINIO_BUCKET:catalogs}
+    bucket: ${MINIO_BUCKET:atelie-media}
     max-file-size: 5MB
   outbox:
     enabled: true

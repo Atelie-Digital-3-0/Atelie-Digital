@@ -70,5 +70,4 @@ services:
 
 volumes:
   postgres-data:
-  minio-data:
   minio-storage-data:
