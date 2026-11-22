@@ -17,6 +17,8 @@ import br.com.ateliedigital.store.repository.CategoryRepository;
 import br.com.ateliedigital.store.repository.StoreRepository;
 import br.com.ateliedigital.store.service.StoreAddressService;
 import br.com.ateliedigital.store.service.StoreService;
+import br.com.ateliedigital.storage.service.StorageService;
+import org.springframework.web.multipart.MultipartFile;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.security.access.AccessDeniedException;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -38,6 +39,15 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class StoreServiceTest {
+    @Mock
+    private StorageService storageService;
+
+    @Mock
+    private MultipartFile image;
+
+    @Mock
+    private MultipartFile banner;
+
     @Mock
     private StoreRepository storeRepository;
 
@@ -133,10 +143,25 @@ public class StoreServiceTest {
 
         when(storeRepository.save(store)).thenReturn(store);
 
+        String imageKey = "stores/" + storeId + "/image";
+        String bannerKey = "stores/" + storeId + "/banner";
+
+        when(storageService.upload(image, "stores/" + storeId + "/image"))
+                .thenReturn(imageKey);
+
+        when(storageService.upload(banner, "stores/" + storeId + "/banner"))
+                .thenReturn(bannerKey);
+
+        when(storageService.getPublicUrl(imageKey))
+                .thenReturn("http://localhost:9000/atelie/" + imageKey);
+
+        when(storageService.getPublicUrl(bannerKey))
+                .thenReturn("http://localhost:9000/atelie/" + bannerKey);
+
         when(storeMapper.toResponse(store)).thenReturn(response);
 
         StoreResponses.StorePublicResponse result =
-                storeService.createStore(artisanId, request);
+                storeService.createStore(artisanId, request, image, banner);
 
         assertNotNull(result);
         assertEquals(storeId, result.id());
@@ -146,7 +171,7 @@ public class StoreServiceTest {
         assertEquals("59000-000", address.getZipCode());
         assertSame(store, address.getStore());
 
-        verify(storeRepository).save(store);
+        verify(storeRepository, times(2)).save(store);
 
         verify(outboxManagement).enqueue(
                 eq("STORE"),
@@ -154,6 +179,18 @@ public class StoreServiceTest {
                 eq(StoreCreatedHandler.EVENT_TYPE),
                 eq(new StoreCreatedPayload(storeId, artisanId))
         );
+        verify(storageService).upload(
+                image,
+                "stores/" + storeId + "/image"
+        );
+
+        verify(storageService).upload(
+                banner,
+                "stores/" + storeId + "/banner"
+        );
+
+        assertEquals(imageKey, store.getImage());
+        assertEquals(bannerKey, store.getBanner());
     }
 
     @Test
@@ -166,7 +203,7 @@ public class StoreServiceTest {
 
         assertThrows(
                 VioletedRule.class,
-                () -> storeService.createStore(artisanId, request)
+                () -> storeService.createStore(artisanId, request, image, banner)
         );
 
         verifyNoInteractions(categoryRepository);
@@ -190,7 +227,7 @@ public class StoreServiceTest {
 
         assertThrows(
                 ResourceNotFoundException.class,
-                () -> storeService.createStore(artisanId, request)
+                () -> storeService.createStore(artisanId, request, image, banner)
         );
 
         verifyNoInteractions(storeMapper);
@@ -218,7 +255,7 @@ public class StoreServiceTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> storeService.createStore(artisanId, request)
+                () -> storeService.createStore(artisanId, request, image, banner)
         );
 
         verify(storeRepository, never()).save(any());
