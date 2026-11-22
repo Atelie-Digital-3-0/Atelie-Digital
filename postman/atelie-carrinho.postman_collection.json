@@ -1,0 +1,1496 @@
+{
+  "info": {
+    "name": "Ateliê Digital — Carrinho",
+    "description": "Endpoints de docs/carrinho.md contra os serviços locais (app :8080, Keycloak :8180, catalog_stub.py :8008). Rode as pastas em ordem.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "0. Autenticação (Keycloak local)",
+      "item": [
+        {
+          "name": "Login CLIENT (cliente@atelie.dev)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": [
+                "{{keycloak_url}}"
+              ],
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}"
+                },
+                {
+                  "key": "username",
+                  "value": "cliente@atelie.dev"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token_client', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login ARTISAN (artesao@atelie.dev)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": [
+                "{{keycloak_url}}"
+              ],
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}"
+                },
+                {
+                  "key": "username",
+                  "value": "artesao@atelie.dev"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token_artisan', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login ADMIN (admin@atelie.dev)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{keycloak_url}}/realms/{{realm}}/protocol/openid-connect/token",
+              "host": [
+                "{{keycloak_url}}"
+              ],
+              "path": [
+                "realms",
+                "{{realm}}",
+                "protocol",
+                "openid-connect",
+                "token"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "{{client_id}}"
+                },
+                {
+                  "key": "username",
+                  "value": "admin@atelie.dev"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('token_admin', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "1. Completar cadastro (1ª vez)",
+      "description": "Sem isso o carrinho responde 403 ACCOUNT_INCOMPLETE. Se a conta já estiver completa, erro aqui é esperado.",
+      "item": [
+        {
+          "name": "[CLIENT] PUT /api/accounts/me/complete",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "complete"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Mariana\",\n  \"last_name\": \"Souza\",\n  \"cellphone\": \"11987654321\",\n  \"date_of_birth\": \"1994-03-15\",\n  \"bio\": \"Conta fictícia para testes locais do carrinho\",\n  \"cpf\": \"{{cpf_client}}\",\n  \"address\": {\n    \"zip_code\": \"01001000\",\n    \"street\": \"Praca da Se\",\n    \"number\": \"100\",\n    \"complement\": \"Apto 12\",\n    \"neighborhood\": \"Se\",\n    \"city\": \"Sao Paulo\",\n    \"state\": \"SP\",\n    \"main\": true\n  }\n}"
+            }
+          }
+        },
+        {
+          "name": "[ARTISAN] PUT /api/accounts/me/complete",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/accounts/me/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "accounts",
+                "me",
+                "complete"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_artisan}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"first_name\": \"Joao\",\n  \"last_name\": \"Ferreira\",\n  \"cellphone\": \"21976543210\",\n  \"date_of_birth\": \"1988-11-02\",\n  \"bio\": \"Conta fictícia para testes locais do carrinho\",\n  \"cpf\": \"{{cpf_artisan}}\",\n  \"address\": {\n    \"zip_code\": \"20040002\",\n    \"street\": \"Rua da Assembleia\",\n    \"number\": \"45\",\n    \"complement\": \"Atelie\",\n    \"neighborhood\": \"Centro\",\n    \"city\": \"Rio de Janeiro\",\n    \"state\": \"RJ\",\n    \"main\": true\n  }\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Carrinho CLIENT — fluxo feliz",
+      "item": [
+        {
+          "name": "DELETE /api/carts (começar limpo)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/carts (vazio)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Totais zerados', () => pm.expect(pm.response.json().total_items).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /items — adiciona 2x variante 101",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 2\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /items — soma +1 na 101 (total 3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Quantidade somada', () => pm.expect(pm.response.json().quantity).to.eql(3));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /items — adiciona 1x variante 102",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id_2}}\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/carts (2 itens, verificado)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test('2 itens', () => pm.expect(j.total_items).to.eql(2));",
+                  "pm.test('verified', () => pm.expect(j.verified).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /items/101 — define quantidade 4",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items/{{product_variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items",
+                "{{product_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 4\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('AVAILABLE', () => pm.expect(pm.response.json().status).to.eql('AVAILABLE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH /items/102 — quantidade 0 remove",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items/{{product_variant_id_2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items",
+                "{{product_variant_id_2}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 0\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /items/101 — remove item",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items/{{product_variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items",
+                "{{product_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/carts — limpa (idempotente)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Carrinho ARTISAN",
+      "item": [
+        {
+          "name": "POST /items — artesão adiciona 1x 101",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_artisan}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /api/carts — isolado do CLIENT",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_artisan}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE /api/carts",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_artisan}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Erros esperados",
+      "item": [
+        {
+          "name": "GET sem token -> 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET como ADMIN -> 403",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_admin}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST quantity 0 -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 0\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST id inválido -> 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"cart:abc\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST variante inexistente -> 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{missing_variant_id}}\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST acima do estoque -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "Stub: variante 101 tem estoque 10.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 11\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST acima de 99 -> 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 100\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH quantidade negativa -> 400",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items/{{product_variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items",
+                "{{product_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": -1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "PATCH item fora do carrinho -> 404",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items/{{missing_variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items",
+                "{{missing_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DELETE item fora do carrinho -> 404",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items/{{missing_variant_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items",
+                "{{missing_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST com catálogo desligado -> 503",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/carts/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "carts",
+                "items"
+              ]
+            },
+            "description": "Pare o catalog_stub.py (porta 8008) antes de enviar.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token_client}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_variant_id\": \"{{product_variant_id}}\",\n  \"quantity\": 1\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 503', () => pm.response.to.have.status(503));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5. Catálogo (stub local, direto)",
+      "item": [
+        {
+          "name": "GET variação 101",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{catalog_url}}/products/variations/{{product_variant_id}}",
+              "host": [
+                "{{catalog_url}}"
+              ],
+              "path": [
+                "products",
+                "variations",
+                "{{product_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET variação inexistente -> 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{catalog_url}}/products/variations/{{missing_variant_id}}",
+              "host": [
+                "{{catalog_url}}"
+              ],
+              "path": [
+                "products",
+                "variations",
+                "{{missing_variant_id}}"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "keycloak_url",
+      "value": "http://localhost:8180"
+    },
+    {
+      "key": "realm",
+      "value": "atelie"
+    },
+    {
+      "key": "client_id",
+      "value": "atelie-web"
+    },
+    {
+      "key": "password",
+      "value": "dev123"
+    },
+    {
+      "key": "catalog_url",
+      "value": "http://localhost:8008/api/v1/catalog"
+    },
+    {
+      "key": "cpf_client",
+      "value": "52998224725"
+    },
+    {
+      "key": "cpf_artisan",
+      "value": "11144477735"
+    },
+    {
+      "key": "product_variant_id",
+      "value": "101"
+    },
+    {
+      "key": "product_variant_id_2",
+      "value": "102"
+    },
+    {
+      "key": "missing_variant_id",
+      "value": "999"
+    },
+    {
+      "key": "token_client",
+      "value": ""
+    },
+    {
+      "key": "token_artisan",
+      "value": ""
+    },
+    {
+      "key": "token_admin",
+      "value": ""
+    }
+  ]
+}
