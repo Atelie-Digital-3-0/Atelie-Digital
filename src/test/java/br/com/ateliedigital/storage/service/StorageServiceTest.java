@@ -268,6 +268,23 @@ public class StorageServiceTest {
 
         verifyNoInteractions(objectStorage);
     }
+    @ParameterizedTest
+    @ValueSource(strings = {"", " "})
+    void shouldRejectBlankContentType(String contentType) {
+        MockMultipartFile file = new MockMultipartFile(
+                "file",
+                "photo.jpg",
+                contentType,
+                fileContent(JPEG_SIGNATURE)
+        );
+
+        assertThrows(
+                VioletedRule.class,
+                () -> storageService.upload(file, "stores/42/logo")
+        );
+
+        verifyNoInteractions(objectStorage);
+    }
 
     @ParameterizedTest
     @ValueSource(strings = {
@@ -295,6 +312,7 @@ public class StorageServiceTest {
 
         verifyNoInteractions(objectStorage);
     }
+
 
     @Test
     void shouldRejectNullStoragePrefix() {
