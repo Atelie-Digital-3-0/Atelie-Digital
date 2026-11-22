@@ -32,7 +32,7 @@ public class StorageObjectDeletionHandlerTest {
     @Test
     void shouldReturnCorrectEventType() {
         assertEquals(
-                "STORAGE_OBJECT_DELETION_REQUESTED",
+                StorageObjectDeletionHandler.EVENT_TYPE,
                 handler.eventType()
         );
     }
