@@ -119,6 +119,14 @@ public class MinioObjectStorageIntegrationTest {
 
         assertFalse(objectStorage.exists(objectKey));
     }
+    @Test
+    void shouldDeleteNonExistingObjectWithoutThrowingException() {
+        String objectKey = "products/" + UUID.randomUUID() + ".png";
+
+        assertDoesNotThrow(() -> objectStorage.delete(objectKey));
+
+        assertFalse(objectStorage.exists(objectKey));
+    }
 
     @Test
     void shouldReturnFalseWhenObjectDoesNotExist() {
