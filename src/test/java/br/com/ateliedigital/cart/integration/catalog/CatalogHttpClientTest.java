@@ -3,6 +3,9 @@ package br.com.ateliedigital.cart.integration.catalog;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
@@ -13,6 +16,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
@@ -91,6 +96,108 @@ class CatalogHttpClientTest {
 
         List.of("1", "2", "3", "4").forEach(id ->
                 assertThat(client.lookup(id)).as("variant %s", id).isInstanceOf(VariantLookup.Missing.class));
+    }
+
+    /** Valor-limite da integridade: menor preco positivo e estoque zerado ainda sao dados validos. */
+    @ParameterizedTest(name = "[{index}] price={0}, stock={1}")
+    @CsvSource({"0.01, 0", "0.01, 1", "99999.99, 2147483647"})
+    @DisplayName("Integrity boundaries that are still valid: minimum positive price and zero stock")
+    void lookupValidBoundaries(String price, int stock) {
+        expectVariant("7", variantJson(7, price, stock));
+
+        assertThat(client.lookup("7")).isInstanceOfSatisfying(VariantLookup.Found.class, found -> {
+            assertThat(found.product().unitPrice()).isEqualByComparingTo(price);
+            assertThat(found.product().stock()).isEqualTo(stock);
+        });
+    }
+
+    @ParameterizedTest(name = "[{index}] {0}")
+    @ValueSource(strings = {
+            "{\"id\": 7, \"product_id\": 70, \"store_id\": 700, \"price\": 10.0, \"stock\": 3, \"is_deleted\": true}",
+            "{\"id\": 7, \"store_id\": 700, \"price\": 10.0, \"stock\": 3}",
+            "{\"id\": 7, \"product_id\": 70, \"store_id\": 700, \"stock\": 3}",
+            "{\"id\": 7, \"product_id\": 70, \"store_id\": 700, \"price\": -0.01, \"stock\": 3}",
+            "{\"id\": 7, \"product_id\": 70, \"store_id\": 700, \"price\": 10.0}",
+            "{\"product_id\": 70, \"store_id\": 700, \"price\": 10.0, \"stock\": 3}"
+    })
+    @DisplayName("Deleted variant or missing/invalid required fields are treated as missing")
+    void lookupInvalidPayloads(String body) {
+        expectVariant("7", body);
+
+        assertThat(client.lookup("7")).isInstanceOf(VariantLookup.Missing.class);
+    }
+
+    @Test
+    @DisplayName("Explicitly active and not deleted variant is found")
+    void lookupExplicitlyActive() {
+        expectVariant("7", """
+                {"id": 7, "product_id": 70, "store_id": 700, "price": 10.0, "stock": 3,
+                 "is_active": true, "is_deleted": false}""");
+
+        assertThat(client.lookup("7")).isInstanceOf(VariantLookup.Found.class);
+    }
+
+    @Test
+    @DisplayName("4xx other than 404 is a failure, not a missing product")
+    void lookupClientError() {
+        server.expect(requestTo(BASE_URL + "/products/variations/7")).andRespond(withStatus(HttpStatus.FORBIDDEN));
+
+        assertThat(client.lookup("7")).isInstanceOfSatisfying(VariantLookup.Failed.class,
+                failed -> assertThat(failed.reason()).isEqualTo("catalog responded 403"));
+    }
+
+    @Test
+    @DisplayName("200 without body is a failure")
+    void lookupEmptyBody() {
+        server.expect(requestTo(BASE_URL + "/products/variations/7")).andRespond(withStatus(HttpStatus.OK));
+
+        assertThat(client.lookup("7")).isEqualTo(VariantLookup.failed("empty body"));
+    }
+
+    @Test
+    @DisplayName("Batch lookup: unexpected exception in one lookup becomes a failure for that variant")
+    void lookupAllUnexpectedException() {
+        CatalogHttpClient broken = new CatalogHttpClient(RestClient.builder(), new CatalogProperties(BASE_URL)) {
+            @Override
+            public VariantLookup lookup(String productVariantId) {
+                throw new IllegalStateException("boom");
+            }
+        };
+
+        assertThat(broken.lookupAll(List.of("7")).get("7")).isInstanceOfSatisfying(VariantLookup.Failed.class,
+                failed -> assertThat(failed.reason()).contains("boom"));
+    }
+
+    @Test
+    @DisplayName("Batch lookup interrupted while waiting: failure per variant and the interrupt flag is kept")
+    void lookupAllInterrupted() {
+        CountDownLatch never = new CountDownLatch(1);
+        server.expect(requestTo(BASE_URL + "/products/variations/7")).andRespond(request -> {
+            try {
+                never.await(5, TimeUnit.SECONDS); // a consulta fica pendente ate a thread ser interrompida
+            } catch (InterruptedException interrupted) {
+                throw new java.io.InterruptedIOException("interrupted");
+            }
+            throw new java.io.IOException("timeout");
+        });
+        Thread.currentThread().interrupt();
+        try {
+            Map<String, VariantLookup> result = client.lookupAll(List.of("7"));
+
+            assertThat(result.get("7")).isEqualTo(VariantLookup.failed("interrupted"));
+            assertThat(Thread.currentThread().isInterrupted()).isTrue();
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
+    @DisplayName("Connection error (exception) is a failure")
+    void lookupConnectionError() {
+        server.expect(requestTo(BASE_URL + "/products/variations/7"))
+                .andRespond(request -> { throw new java.net.ConnectException("Connection refused"); });
+
+        assertThat(client.lookup("7")).isInstanceOf(VariantLookup.Failed.class);
     }
 
     @Test

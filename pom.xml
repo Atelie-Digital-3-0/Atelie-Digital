@@ -281,6 +281,43 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<!--
+					Teste de mutacao (escore de mutacao). Nao roda no build padrao:
+					./mvnw test-compile org.pitest:pitest-maven:mutationCoverage
+					Relatorio em target/pit-reports/index.html. Por padrao avalia o modulo cart com os
+					testes unitarios (os de integracao, que precisam de Docker, ficam de fora).
+				-->
+				<groupId>org.pitest</groupId>
+				<artifactId>pitest-maven</artifactId>
+				<version>1.30.2</version>
+				<dependencies>
+					<dependency>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-junit5-plugin</artifactId>
+						<version>1.2.3</version>
+					</dependency>
+				</dependencies>
+				<configuration>
+					<targetClasses>
+						<param>br.com.ateliedigital.cart.*</param>
+					</targetClasses>
+					<targetTests>
+						<param>br.com.ateliedigital.cart.*</param>
+					</targetTests>
+					<excludedTestClasses>
+						<param>*IntegrationTest</param>
+					</excludedTestClasses>
+					<mutators>
+						<mutator>STRONGER</mutator>
+					</mutators>
+					<outputFormats>
+						<param>HTML</param>
+						<param>XML</param>
+					</outputFormats>
+					<timestampedReports>false</timestampedReports>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 

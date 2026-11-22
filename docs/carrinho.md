@@ -172,14 +172,20 @@ O Redis usa o `spring.data.redis.*` que já existia (`REDIS_HOST`, `REDIS_PORT`,
 
 | Classe | Tipo | Testes | O que cobre |
 |---|---|---|---|
-| `CartServiceTest` | Unitário (Mockito) | 16 | Regras: soma, limites, estoque, catálogo fora, reconciliação, remoção |
-| `CartControllerTest` | MockMvc standalone | 10 | Status HTTP, validação dos DTOs, snake_case |
-| `CatalogHttpClientTest` | `MockRestServiceServer` | 7 | 200/404/5xx, inativo, dados inconsistentes, corpo inválido, consulta em lote |
+| `CartServiceTest` | Unitário (Mockito) | 43 | Regras: soma, valores-limite de quantidade/estoque/itens distintos, catálogo fora, reconciliação, remoção |
+| `CartRequestsValidationTest` | Unitário (Bean Validation) | 30 | Classes de equivalência e limites do id (1/64/65) e das quantidades |
+| `CartControllerTest` | Unitário (MockMvc standalone) | 29 | Um caso por status de cada rota, corpos inválidos, `sub` não UUID, id inválido na URL, snake_case |
+| `CatalogHttpClientTest` | Unitário (`MockRestServiceServer`) | 22 | 200/404/4xx/5xx, inativo/excluído, limites de preço e estoque, corpo vazio/inválido, lote (ordem, interrupção, exceção) |
+| `CartMapperTest` | Unitário | 20 | Tabela de decisão do status, arredondamento HALF_EVEN, totais |
+| `CartRepositoryTest` | Unitário (`RedisTemplate` mockado) | 12 | Chave, ordenação, `WATCH/MULTI/EXEC` com retentativas, conflito, interrupção |
+| `CartConfigurationTest`, `CartItemTest`, `CartItemStatusTest`, `ProductCatalogTest`, `CartManagementTest` | Unitário | 13 | JSON do Redis, snapshot, status compráveis, lote padrão, API pública |
 | `CartRepositoryIntegrationTest` | Redis real | 5 | JSON no Redis, ausência de TTL, ordem, isolamento, 8 threads concorrentes sem perder incrementos |
 | `CartApiIntegrationTest` | Spring completo + Postgres e Redis reais | 8 | Segurança (401/403/ACCOUNT_INCOMPLETE/ADMIN), fluxo completo, isolamento entre usuários, integridade, reconciliação, catálogo fora |
 | `ModularityTests` | Spring Modulith | 1 | Fronteiras entre módulos |
 
-**Resultado de `./mvnw verify`: 226 testes, 0 falhas, 0 erros, BUILD SUCCESS.** O número inclui os testes que já existiam no projeto.
+**Resultado de `./mvnw verify` em 22/11/2026: 449 testes, 448 aprovados, 1 erro.** O número inclui os testes dos outros módulos. O erro é do `ModularityTests`, por um ciclo `accounts → exceptions → store → accounts` que já existia e não envolve o carrinho. Todos os 182 testes do carrinho (169 unitários e 13 de integração) passam.
+
+As técnicas, os critérios, a seleção dos dados, a cobertura (100% das linhas) e o escore de mutação (96%) dos testes unitários estão em [`testes-unitarios-carrinho.md`](testes-unitarios-carrinho.md).
 
 Para rodar só os testes do carrinho:
 ```bash
@@ -210,7 +216,8 @@ Para rodar só os testes do carrinho:
 
 ## Status e pendências
 
-- ✅ Implementação, testes automatizados (226/226) e verificação de modularidade.
+- ✅ Implementação e testes automatizados do carrinho (182/182: 169 unitários e 13 de integração).
+- ⚠️ O `ModularityTests` falha por um ciclo entre `accounts`, `exceptions` e `store`, que já existia e não envolve o carrinho.
 - ⚠️ **O teste ponta a ponta contra a aplicação rodando (Keycloak real + stub do catálogo) não foi concluído.** A sessão anterior terminou enquanto o Docker ainda baixava as imagens do Keycloak e do Mailpit. O roteiro está pronto, mas fica no scratchpad da sessão, que pode ser apagado (`catalog_stub.py`, `variants.json`, `e2e.sh`). Convém rodá-lo ou refazer os passos acima manualmente.
 - Nenhum commit foi feito.
 - Possíveis evoluções: bloquear compra da própria loja; trocar o adaptador HTTP por chamada in-process quando o módulo de catálogo existir; cache curto das consultas ao catálogo.
