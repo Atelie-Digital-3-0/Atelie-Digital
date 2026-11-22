@@ -16,7 +16,11 @@ import br.com.ateliedigital.outbox.OutboxManagement;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import br.com.ateliedigital.storage.service.StorageService;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -24,6 +28,7 @@ import br.com.ateliedigital.exceptions.VioletedRule;
 
 @Service
 public class StoreService {
+    private final StorageService storageService;
     private final StoreRepository storeRepository;
     private final CategoryRepository categoryRepository;
     private final StoreMapper storeMapper;
@@ -37,7 +42,9 @@ public class StoreService {
             StoreMapper storeMapper,
             StoreAddressMapper addressMapper,
             StoreAddressService addressService,
-            OutboxManagement outboxManagement
+            OutboxManagement outboxManagement,
+            StorageService storageService
+
     ) {
         this.storeRepository = storeRepository;
         this.categoryRepository = categoryRepository;
@@ -45,12 +52,16 @@ public class StoreService {
         this.addressMapper = addressMapper;
         this.addressService = addressService;
         this.outboxManagement = outboxManagement;
+        this.storageService = storageService;
     }
+
 
     @Transactional
     public StoreResponses.StorePublicResponse createStore(
             UUID artisanId,
-            StoreRequests.CreateStoreRequest request
+            StoreRequests.CreateStoreRequest request,
+            MultipartFile image,
+            MultipartFile banner
     ) {
         if (storeRepository.existsByArtisanIdAndDeletedAtIsNull(
                 artisanId.toString()
@@ -79,22 +90,51 @@ public class StoreService {
                 )
         );
 
+        // Persiste primeiro para obter o UUID da loja.
         StoreModel savedStore = storeRepository.save(store);
 
-        StoreCreatedPayload payload = new StoreCreatedPayload(
-                savedStore.getId(),
-                artisanId
-        );
+        String storePrefix = "stores/" + savedStore.getId();
 
-        outboxManagement.enqueue(
-                "STORE",
-                savedStore.getId(),
-                StoreCreatedHandler.EVENT_TYPE,
-                payload
-        );
+        List<String> uploadedObjects = new ArrayList<>();
 
-        return storeMapper.toResponse(savedStore);
+        try {
+            String imageKey = storageService.upload(
+                    image,
+                    storePrefix + "/image"
+            );
+            uploadedObjects.add(imageKey);
+
+            String bannerKey = storageService.upload(
+                    banner,
+                    storePrefix + "/banner"
+            );
+            uploadedObjects.add(bannerKey);
+
+            savedStore.setImage(imageKey);
+            savedStore.setBanner(bannerKey);
+
+            savedStore = storeRepository.save(savedStore);
+
+            StoreCreatedPayload payload = new StoreCreatedPayload(
+                    savedStore.getId(),
+                    artisanId
+            );
+
+            outboxManagement.enqueue(
+                    "STORE",
+                    savedStore.getId(),
+                    StoreCreatedHandler.EVENT_TYPE,
+                    payload
+            );
+
+            return toPublicResponse(savedStore);
+
+        } catch (RuntimeException exception) {
+            cleanupUploadedObjects(uploadedObjects, exception);
+            throw exception;
+        }
     }
+
 
     @Transactional(readOnly = true)
     public StoreResponses.StorePublicResponse getStoreById(UUID storeId) {
@@ -177,4 +217,46 @@ public class StoreService {
             );
         }
     }
+
+    private StoreResponses.StorePublicResponse toPublicResponse(
+            StoreModel store
+    ) {
+        StoreResponses.StorePublicResponse response =
+                storeMapper.toResponse(store);
+
+        String imageUrl = store.getImage() != null
+                ? storageService.getPublicUrl(store.getImage())
+                : null;
+
+        String bannerUrl = store.getBanner() != null
+                ? storageService.getPublicUrl(store.getBanner())
+                : null;
+
+        return new StoreResponses.StorePublicResponse(
+                response.id(),
+                response.artisanId(),
+                response.name(),
+                response.description(),
+                response.category(),
+                imageUrl,
+                bannerUrl,
+                response.address(),
+                response.createdAt(),
+                response.updatedAt()
+        );
+    }
+
+    private void cleanupUploadedObjects(
+            List<String> objectKeys,
+            RuntimeException originalException
+    ) {
+        for (String objectKey : objectKeys) {
+            try {
+                storageService.delete(objectKey);
+            } catch (RuntimeException cleanupException) {
+                originalException.addSuppressed(cleanupException);
+            }
+        }
+    }
+
 }
