@@ -13,6 +13,18 @@ public class StoreRequests {
             @Size(min = 3, max = 150, message = "O nome deve ter entre 3 e 150 caracteres")
             String name,
 
+            @NotBlank(message = "O telefone da loja é obrigatório")
+            @Pattern(
+                    regexp = "^(?:\\+55\\s?)?\\(?[1-9][0-9]\\)?\\s?9?[0-9]{4}-?[0-9]{4}$",
+                    message = "Formato de telefone inválido"
+            )
+            String phone,
+
+            @NotBlank(message = "O e-mail da loja é obrigatório")
+            @Email(message = "Formato de e-mail inválido")
+            @Size(max = 254, message = "O e-mail deve ter no máximo 254 caracteres")
+            String email,
+
             @Size(max = 500, message = "A descrição deve ter no máximo 500 caracteres")
             String description,
 
@@ -27,6 +39,20 @@ public class StoreRequests {
     public record UpdateStoreRequest(
             @Size(max = 500, message = "A descrição deve ter no máximo 500 caracteres")
             String description,
+
+            @Pattern(
+                    regexp = "^(?:\\+55\\s?)?\\(?[1-9][0-9]\\)?\\s?9?[0-9]{4}-?[0-9]{4}$",
+                    message = "Formato de telefone inválido"
+            )
+            String phone,
+
+            @Email(message = "Formato de e-mail inválido")
+            @Size(max = 254, message = "O e-mail deve ter no máximo 254 caracteres")
+            @Pattern(
+                    regexp = ".*\\S.*",
+                    message = "O e-mail não pode estar em branco"
+            )
+            String email,
 
             @Valid
             StoreAddressRequests.AddressUpdateRequest address

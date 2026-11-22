@@ -9,6 +9,8 @@ public class StoreResponses {
             UUID id,
             UUID artisanId,
             String name,
+            String phone,
+            String email,
             String description,
             CategoryResponse category,
             String image,

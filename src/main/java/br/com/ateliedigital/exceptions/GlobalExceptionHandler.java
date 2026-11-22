@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
+import br.com.ateliedigital.store.integration.viacep.ZipCodeLookupException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,8 +93,54 @@ public class GlobalExceptionHandler {
         log.error("Unexpected error on {}", request.getRequestURI(), exception);
         return response(HttpStatus.INTERNAL_SERVER_ERROR, "Internal error when processing the request", request);
     }
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<ApiError> storageError(
+            StorageException exception,
+            HttpServletRequest request
+    ) {
+        log.error(
+                "Storage operation failed on {}",
+                request.getRequestURI(),
+                exception
+        );
+
+        return response(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Storage service is temporarily unavailable",
+                request
+        );
+    }
 
     private ResponseEntity<ApiError> response(HttpStatus status, String message, HttpServletRequest request) {
         return ResponseEntity.status(status).body(new ApiError(Instant.now(), status.value(), message, request.getRequestURI()));
+    }
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiError> illegalArgument(
+            IllegalArgumentException exception,
+            HttpServletRequest request
+    ) {
+        return response(
+                HttpStatus.BAD_REQUEST,
+                exception.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(ZipCodeLookupException.class)
+    public ResponseEntity<ApiError> zipCodeLookup(
+            ZipCodeLookupException exception,
+            HttpServletRequest request
+    ) {
+        log.error(
+                "ViaCEP lookup failed on {}",
+                request.getRequestURI(),
+                exception
+        );
+
+        return response(
+                HttpStatus.BAD_GATEWAY,
+                "Unable to retrieve address information from ViaCEP",
+                request
+        );
     }
 }
