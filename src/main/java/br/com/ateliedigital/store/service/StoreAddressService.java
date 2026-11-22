@@ -1,11 +1,11 @@
 package br.com.ateliedigital.store.service;
 
 import br.com.ateliedigital.exceptions.VioletedRule;
+import br.com.ateliedigital.store.dto.responses.StoreAddressResponses.ZipCodeLookupResponse;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreClient;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreResponse;
 import br.com.ateliedigital.store.integration.viacep.ZipCodeLookupException;
 import org.springframework.stereotype.Service;
-import br.com.ateliedigital.store.dto.responses.StoreAddressResponses.ZipCodeLookupResponse;
 
 @Service
 public class StoreAddressService {
@@ -16,15 +16,7 @@ public class StoreAddressService {
     }
 
     public String validateAndFormatZipCode(String rawZipCode) {
-        if (rawZipCode == null) {
-            throw new IllegalArgumentException("Zip code cannot be null");
-        }
-
-        String digits = rawZipCode.replaceAll("\\D", "");
-
-        if (!digits.matches("\\d{8}")) {
-            throw new IllegalArgumentException("Invalid zip code format");
-        }
+        String digits = normalizeAndValidateZipCode(rawZipCode);
 
         try {
             ViaCepStoreResponse response = viaCepClient.find(digits);
@@ -37,18 +29,11 @@ public class StoreAddressService {
             // ViaCEP indisponível: aceita o CEP após validar seu formato.
         }
 
-        return digits.substring(0, 5) + "-" + digits.substring(5);
+        return formatZipCode(digits);
     }
+
     public ZipCodeLookupResponse findAddressByZipCode(String rawZipCode) {
-        if (rawZipCode == null) {
-            throw new IllegalArgumentException("Zip code cannot be null");
-        }
-
-        String digits = rawZipCode.replaceAll("\\D", "");
-
-        if (!digits.matches("\\d{8}")) {
-            throw new IllegalArgumentException("Invalid zip code format");
-        }
+        String digits = normalizeAndValidateZipCode(rawZipCode);
 
         ViaCepStoreResponse response = viaCepClient.find(digits);
 
@@ -64,5 +49,23 @@ public class StoreAddressService {
                 response.uf(),
                 response.complemento()
         );
+    }
+
+    private String normalizeAndValidateZipCode(String rawZipCode) {
+        if (rawZipCode == null) {
+            throw new IllegalArgumentException("Zip code cannot be null");
+        }
+
+        String digits = rawZipCode.replaceAll("\\D", "");
+
+        if (!digits.matches("\\d{8}")) {
+            throw new IllegalArgumentException("Invalid zip code format");
+        }
+
+        return digits;
+    }
+
+    private String formatZipCode(String digits) {
+        return digits.substring(0, 5) + "-" + digits.substring(5);
     }
 }

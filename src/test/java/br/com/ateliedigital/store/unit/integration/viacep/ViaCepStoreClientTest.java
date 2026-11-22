@@ -119,4 +119,13 @@ public class ViaCepStoreClientTest {
         assertNotNull(exception.getCause());
         assertEquals("Connection refused", exception.getCause().getMessage());
     }
+    @Test
+    void shouldThrowExceptionWhenZipCodeIsNull() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> client.find(null)
+        );
+
+        verifyNoInteractions(restClient);
+    }
 }
