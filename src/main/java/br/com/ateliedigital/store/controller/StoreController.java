@@ -6,14 +6,17 @@ import br.com.ateliedigital.store.dto.requests.StoreRequests.UpdateStoreRequest;
 import br.com.ateliedigital.store.dto.responses.StoreResponses.StorePublicResponse;
 import br.com.ateliedigital.store.service.StoreService;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/api/stores")
@@ -25,16 +28,23 @@ public class StoreController {
         this.storeService = storeService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('ARTISAN')")
     public ResponseEntity<StorePublicResponse> create(
             JwtAuthenticationToken authentication,
-            @Valid @RequestBody CreateStoreRequest request
+            @Valid @RequestPart("request") CreateStoreRequest request,
+            @RequestPart("image") MultipartFile image,
+            @RequestPart("banner") MultipartFile banner
     ) {
         UUID artisanId = AccountService.keycloakId(authentication);
 
         StorePublicResponse response =
-                storeService.createStore(artisanId, request);
+                storeService.createStore(
+                        artisanId,
+                        request,
+                        image,
+                        banner
+                );
 
         URI uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
