@@ -1,0 +1,3 @@
+ALTER TABLE store.stores
+    ALTER COLUMN phone SET NOT NULL,
+    ALTER COLUMN email SET NOT NULL;
