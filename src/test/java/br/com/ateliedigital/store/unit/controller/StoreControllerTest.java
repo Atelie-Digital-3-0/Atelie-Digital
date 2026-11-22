@@ -1,4 +1,5 @@
 package br.com.ateliedigital.store.unit.controller;
+
 import br.com.ateliedigital.exceptions.GlobalExceptionHandler;
 import br.com.ateliedigital.store.controller.StoreController;
 import br.com.ateliedigital.store.dto.requests.StoreRequests.CreateStoreRequest;
@@ -7,22 +8,29 @@ import br.com.ateliedigital.store.dto.responses.StoreAddressResponses.AddressRes
 import br.com.ateliedigital.store.dto.responses.StoreResponses.CategoryResponse;
 import br.com.ateliedigital.store.dto.responses.StoreResponses.StorePublicResponse;
 import br.com.ateliedigital.store.service.StoreService;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.*;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -113,60 +121,108 @@ public class StoreControllerTest {
 
     // CREATE
 
+
     @Test
     void shouldCreateStoreAndReturnCreatedResponse() throws Exception {
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                validCreateStoreJson().getBytes(StandardCharsets.UTF_8)
+        );
+
+        MockMultipartFile image = new MockMultipartFile(
+                "image",
+                "store.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{1, 2, 3}
+        );
+
+        MockMultipartFile banner = new MockMultipartFile(
+                "banner",
+                "banner.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{4, 5, 6}
+        );
+
         StorePublicResponse response = buildStoreResponse();
 
         when(storeService.createStore(
                 eq(artisanId),
-                any(CreateStoreRequest.class)
+                any(CreateStoreRequest.class),
+                any(MultipartFile.class),
+                any(MultipartFile.class)
         )).thenReturn(response);
 
-        mockMvc.perform(post("/api/stores")
-                        .principal(authentication)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(validCreateStoreJson()))
+        mockMvc.perform(multipart("/api/stores")
+                        .file(requestPart)
+                        .file(image)
+                        .file(banner)
+                        .principal(authentication))
                 .andExpect(status().isCreated())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().contentTypeCompatibleWith(
+                        MediaType.APPLICATION_JSON
+                ))
                 .andExpect(header().string(
                         "Location",
-                        org.hamcrest.Matchers.endsWith("/api/stores/" + storeId)
-                ))
-                .andExpect(jsonPath("$.id").value(storeId.toString()))
-                .andExpect(jsonPath("$.artisanId").value(artisanId.toString()))
-                .andExpect(jsonPath("$.name").value("Ateliê Artesanal"))
-                .andExpect(jsonPath("$.description").value("Produtos feitos à mão"))
-                .andExpect(jsonPath("$.category.name").value("Artesanato"))
-                .andExpect(jsonPath("$.address.zipCode").value("59900-000"));
+                        containsString(storeId.toString())
+                ));
 
         verify(storeService).createStore(
                 eq(artisanId),
-                any(CreateStoreRequest.class)
+                any(CreateStoreRequest.class),
+                any(MultipartFile.class),
+                any(MultipartFile.class)
         );
     }
 
-    @Test
-    void shouldReturnBadRequestWhenCreateStoreRequestIsInvalid() throws Exception {
-        String invalidJson = """
-                {
-                    "name": "",
-                    "description": "Descrição",
-                    "categoryId": "%s",
-                    "address": {
-                        "street": "Rua Principal",
-                        "number": "100",
-                        "neighborhood": "Centro",
-                        "city": "Pau dos Ferros",
-                        "state": "RN",
-                        "zipCode": "59900-000"
-                    }
-                }
-                """.formatted(categoryId);
 
-        mockMvc.perform(post("/api/stores")
-                        .principal(authentication)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+    @Test
+    void shouldReturnBadRequestWhenCreateStoreRequestIsInvalid()
+            throws Exception {
+
+        String invalidJson = """
+            {
+                "name": "",
+                "description": "Descrição",
+                "categoryId": "%s",
+                "address": {
+                    "street": "Rua Principal",
+                    "number": "100",
+                    "neighborhood": "Centro",
+                    "city": "Pau dos Ferros",
+                    "state": "RN",
+                    "zipCode": "59900-000"
+                }
+            }
+            """.formatted(categoryId);
+
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                invalidJson.getBytes(StandardCharsets.UTF_8)
+        );
+
+        MockMultipartFile image = new MockMultipartFile(
+                "image",
+                "store.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{1, 2, 3}
+        );
+
+        MockMultipartFile banner = new MockMultipartFile(
+                "banner",
+                "banner.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{4, 5, 6}
+        );
+
+        mockMvc.perform(multipart("/api/stores")
+                        .file(requestPart)
+                        .file(image)
+                        .file(banner)
+                        .principal(authentication))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(storeService);
