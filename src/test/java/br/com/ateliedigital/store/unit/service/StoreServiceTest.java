@@ -101,6 +101,8 @@ public class StoreServiceTest {
         store.setId(storeId);
         store.setArtisanId(artisanId.toString());
         store.setName("Ateliê das Flores");
+        store.setPhone("(84) 99999-9999");
+        store.setEmail("contato@ateliedasflores.com");
         store.setDescription("Produtos artesanais");
         store.setCategory(category);
         store.setAddress(address);
@@ -111,6 +113,8 @@ public class StoreServiceTest {
                 storeId,
                 artisanId,
                 store.getName(),
+                store.getPhone(),
+                store.getEmail(),
                 store.getDescription(),
                 null,
                 null,
@@ -336,6 +340,8 @@ public class StoreServiceTest {
     void shouldUpdateStoreWhenRequesterIsOwner() {
         StoreRequests.UpdateStoreRequest request =
                 new StoreRequests.UpdateStoreRequest(
+                        null,
+                        null,
                         "Nova descrição",
                         null
                 );
@@ -361,6 +367,8 @@ public class StoreServiceTest {
 
         StoreRequests.UpdateStoreRequest request =
                 new StoreRequests.UpdateStoreRequest(
+                        null,
+                        null,
                         "Nova descrição",
                         null
                 );
@@ -397,6 +405,8 @@ public class StoreServiceTest {
 
         StoreRequests.UpdateStoreRequest request =
                 new StoreRequests.UpdateStoreRequest(
+                        null,
+                        null,
                         null,
                         addressRequest
                 );
@@ -435,6 +445,8 @@ public class StoreServiceTest {
         StoreRequests.UpdateStoreRequest request =
                 new StoreRequests.UpdateStoreRequest(
                         null,
+                        null,
+                        null,
                         addressRequest
                 );
 
@@ -456,6 +468,8 @@ public class StoreServiceTest {
 
         StoreRequests.UpdateStoreRequest request =
                 new StoreRequests.UpdateStoreRequest(
+                        null,
+                        null,
                         null,
                         new StoreAddressRequests.AddressUpdateRequest(
                                 "Nova Rua",
@@ -533,6 +547,8 @@ public class StoreServiceTest {
     private StoreRequests.CreateStoreRequest createRequest() {
         return new StoreRequests.CreateStoreRequest(
                 "Ateliê das Flores",
+                "(84) 99999-9999",
+                "contato@ateliedasflores.com",
                 "Produtos artesanais",
                 categoryId,
                 new StoreAddressRequests.AddressRequest(

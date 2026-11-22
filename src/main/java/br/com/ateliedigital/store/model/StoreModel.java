@@ -27,6 +27,12 @@ public class StoreModel {
     @Column(nullable = false, length = 150)
     private String name;
 
+    @Column(nullable = false, length = 20)
+    private String phone;
+
+    @Column(nullable = false, length = 254)
+    private String email;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 

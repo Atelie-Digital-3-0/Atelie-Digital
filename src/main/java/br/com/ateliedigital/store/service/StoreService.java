@@ -236,6 +236,8 @@ public class StoreService {
                 response.id(),
                 response.artisanId(),
                 response.name(),
+                response.phone(),
+                response.email(),
                 response.description(),
                 response.category(),
                 imageUrl,

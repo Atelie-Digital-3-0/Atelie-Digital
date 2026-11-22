@@ -81,6 +81,8 @@ public class StoreControllerTest {
                 storeId,
                 artisanId,
                 "Ateliê Artesanal",
+                "(84) 99999-9999",
+                "contato@atelieartesanal.com",
                 "Produtos feitos à mão",
                 new CategoryResponse(categoryId, "Artesanato"),
                 null,
@@ -103,17 +105,19 @@ public class StoreControllerTest {
     private String validCreateStoreJson() {
         return """
                 {
-                    "name": "Ateliê Artesanal",
-                    "description": "Produtos feitos à mão",
-                    "categoryId": "%s",
-                    "address": {
-                        "street": "Rua Principal",
-                        "number": "100",
-                        "neighborhood": "Centro",
-                        "city": "Pau dos Ferros",
-                        "state": "RN",
-                        "zipCode": "59900-000",
-                        "complement": "Próximo à praça"
+                   "name": "Ateliê Artesanal",
+                   "phone": "(84) 99999-9999",
+                   "email": "contato@atelieartesanal.com",
+                   "description": "Produtos feitos à mão",
+                   "categoryId": "%s",
+                   "address": {
+                       "street": "Rua Principal",
+                       "number": "100",
+                       "neighborhood": "Centro",
+                       "city": "Pau dos Ferros",
+                       "state": "RN",
+                       "zipCode": "59900-000",
+                       "complement": "Próximo à praça"
                     }
                 }
                 """.formatted(categoryId);
@@ -241,6 +245,8 @@ public class StoreControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id").value(storeId.toString()))
                 .andExpect(jsonPath("$.name").value("Ateliê Artesanal"))
+                .andExpect(jsonPath("$.phone").value("(84) 99999-9999"))
+                .andExpect(jsonPath("$.email").value("contato@atelieartesanal.com"))
                 .andExpect(jsonPath("$.category.id").value(categoryId.toString()))
                 .andExpect(jsonPath("$.address.city").value("Pau dos Ferros"));
 
@@ -260,7 +266,9 @@ public class StoreControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(storeId.toString()))
                 .andExpect(jsonPath("$.artisanId").value(artisanId.toString()))
-                .andExpect(jsonPath("$.name").value("Ateliê Artesanal"));
+                .andExpect(jsonPath("$.name").value("Ateliê Artesanal"))
+                .andExpect(jsonPath("$.phone").value("(84) 99999-9999"))
+                .andExpect(jsonPath("$.email").value("contato@atelieartesanal.com"));
 
         verify(storeService).getMyStore(artisanId);
     }
