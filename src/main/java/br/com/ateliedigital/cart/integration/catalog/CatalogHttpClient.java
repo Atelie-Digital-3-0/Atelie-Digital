@@ -7,6 +7,14 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 /**
  * Adaptador HTTP da porta {@link ProductCatalog} para a atelie-catalog-api
@@ -47,6 +55,31 @@ public class CatalogHttpClient implements ProductCatalog {
         } catch (RuntimeException exception) {
             log.warn("Falha ao consultar a variante {} no catalogo: {}", productVariantId, exception.toString());
             return VariantLookup.failed(exception.getClass().getSimpleName());
+        }
+    }
+
+    /** As consultas sao independentes: roda em paralelo (virtual threads) para o tempo do GET nao somar por item. */
+    @Override
+    public Map<String, VariantLookup> lookupAll(Collection<String> productVariantIds) {
+        Map<String, Future<VariantLookup>> pending = new LinkedHashMap<>();
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            for (String id : new LinkedHashSet<>(productVariantIds)) {
+                pending.put(id, executor.submit(() -> lookup(id)));
+            }
+            Map<String, VariantLookup> result = new LinkedHashMap<>();
+            pending.forEach((id, future) -> result.put(id, await(future)));
+            return result;
+        }
+    }
+
+    private static VariantLookup await(Future<VariantLookup> future) {
+        try {
+            return future.get();
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            return VariantLookup.failed("interrupted");
+        } catch (ExecutionException exception) {
+            return VariantLookup.failed(exception.getCause().toString());
         }
     }
 
