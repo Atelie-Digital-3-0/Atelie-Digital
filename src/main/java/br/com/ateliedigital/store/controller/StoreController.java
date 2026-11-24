@@ -71,17 +71,28 @@ public class StoreController {
         return ResponseEntity.ok(storeService.getMyStore(artisanId));
     }
 
-    @PatchMapping("/{storeId}")
+    @PatchMapping(
+            value = "/{storeId}",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
     @PreAuthorize("hasRole('ARTISAN')")
     public ResponseEntity<StorePublicResponse> update(
             JwtAuthenticationToken authentication,
             @PathVariable UUID storeId,
-            @Valid @RequestBody UpdateStoreRequest request
+            @Valid @RequestPart("request") UpdateStoreRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "banner", required = false) MultipartFile banner
     ) {
         UUID artisanId = AccountService.keycloakId(authentication);
 
         StorePublicResponse response =
-                storeService.updateStore(storeId, artisanId, request);
+                storeService.updateStore(
+                        storeId,
+                        artisanId,
+                        request,
+                        image,
+                        banner
+                );
 
         return ResponseEntity.ok(response);
     }

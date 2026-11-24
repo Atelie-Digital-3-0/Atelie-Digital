@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import br.com.ateliedigital.storage.service.StorageService;
 import org.springframework.web.multipart.MultipartFile;
+import br.com.ateliedigital.storage.event.StorageObjectDeletionPayload;
+import br.com.ateliedigital.storage.event.StorageObjectDeletionHandler;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -158,10 +162,11 @@ public class StoreService {
     public StoreResponses.StorePublicResponse updateStore(
             UUID storeId,
             UUID artisanId,
-            StoreRequests.UpdateStoreRequest request
+            StoreRequests.UpdateStoreRequest request,
+            MultipartFile image,
+            MultipartFile banner
     ) {
         StoreModel store = findActiveStore(storeId);
-
         validateOwnership(store, artisanId);
 
         storeMapper.updateEntity(request, store);
@@ -186,7 +191,39 @@ public class StoreService {
             }
         }
 
-        return storeMapper.toResponse(store);
+        String storePrefix = "stores/" + store.getId();
+
+        if (image != null && !image.isEmpty()) {
+            String oldImageKey = store.getImage();
+
+            String newImageKey = storageService.upload(
+                    image,
+                    storePrefix + "/image"
+            );
+
+            registerRollbackCleanup(newImageKey);
+
+            store.setImage(newImageKey);
+
+            enqueueObjectDeletion(oldImageKey, store.getId());
+        }
+
+        if (banner != null && !banner.isEmpty()) {
+            String oldBannerKey = store.getBanner();
+
+            String newBannerKey = storageService.upload(
+                    banner,
+                    storePrefix + "/banner"
+            );
+
+            registerRollbackCleanup(newBannerKey);
+
+            store.setBanner(newBannerKey);
+
+            enqueueObjectDeletion(oldBannerKey, store.getId());
+        }
+
+        return toPublicResponse(store);
     }
 
     @Transactional
@@ -259,6 +296,39 @@ public class StoreService {
                 originalException.addSuppressed(cleanupException);
             }
         }
+    }
+    private void enqueueObjectDeletion(String objectKey, UUID storeId) {
+        if (objectKey == null || objectKey.isBlank()) {
+            return;
+        }
+
+        StorageObjectDeletionPayload payload =
+                new StorageObjectDeletionPayload(objectKey);
+
+        outboxManagement.enqueue(
+                "STORE",
+                storeId,
+                StorageObjectDeletionHandler.EVENT_TYPE,
+                payload
+        );
+    }
+
+    private void registerRollbackCleanup(String objectKey) {
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                            try {
+                                storageService.delete(objectKey);
+                            } catch (RuntimeException ignored) {
+                                // A falha de limpeza não deve ocultar
+                                // a causa do rollback.
+                            }
+                        }
+                    }
+                }
+        );
     }
 
 }

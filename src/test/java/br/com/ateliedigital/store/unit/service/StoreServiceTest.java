@@ -352,7 +352,8 @@ public class StoreServiceTest {
         when(storeMapper.toResponse(store)).thenReturn(response);
 
         StoreResponses.StorePublicResponse result =
-                storeService.updateStore(storeId, artisanId, request);
+                storeService.updateStore(storeId, artisanId, request, null,
+                null);
 
         assertNotNull(result);
 
@@ -381,7 +382,9 @@ public class StoreServiceTest {
                 () -> storeService.updateStore(
                         storeId,
                         anotherArtisanId,
-                        request
+                        request,
+                        null,
+                        null
                 )
         );
 
@@ -419,7 +422,7 @@ public class StoreServiceTest {
 
         when(storeMapper.toResponse(store)).thenReturn(response);
 
-        storeService.updateStore(storeId, artisanId, request);
+        storeService.updateStore(storeId, artisanId, request, null,null);
 
         verify(addressMapper).updateEntity(addressRequest, address);
 
@@ -455,7 +458,7 @@ public class StoreServiceTest {
 
         when(storeMapper.toResponse(store)).thenReturn(response);
 
-        storeService.updateStore(storeId, artisanId, request);
+        storeService.updateStore(storeId, artisanId, request, null, null);
 
         verify(addressMapper).updateEntity(addressRequest, address);
 
@@ -487,7 +490,7 @@ public class StoreServiceTest {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> storeService.updateStore(storeId, artisanId, request)
+                () -> storeService.updateStore(storeId, artisanId, request, null, null)
         );
 
         verifyNoInteractions(addressMapper);
