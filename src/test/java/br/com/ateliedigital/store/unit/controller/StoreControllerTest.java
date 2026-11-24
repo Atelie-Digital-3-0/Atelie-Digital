@@ -280,21 +280,33 @@ public class StoreControllerTest {
         StorePublicResponse response = buildStoreResponse();
 
         String updateJson = """
-                {
-                    "description": "Nova descrição da loja"
-                }
-                """;
+            {
+                "description": "Nova descrição da loja"
+            }
+            """;
+
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                updateJson.getBytes(StandardCharsets.UTF_8)
+        );
 
         when(storeService.updateStore(
                 eq(storeId),
                 eq(artisanId),
-                any(UpdateStoreRequest.class)
+                any(UpdateStoreRequest.class),
+                isNull(),
+                isNull()
         )).thenReturn(response);
 
-        mockMvc.perform(patch("/api/stores/{storeId}", storeId)
+        mockMvc.perform(multipart("/api/stores/{storeId}", storeId)
+                        .file(requestPart)
                         .principal(authentication)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(updateJson))
+                        .with(request -> {
+                            request.setMethod("PATCH");
+                            return request;
+                        }))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(storeId.toString()))
                 .andExpect(jsonPath("$.name").value("Ateliê Artesanal"));
@@ -302,24 +314,38 @@ public class StoreControllerTest {
         verify(storeService).updateStore(
                 eq(storeId),
                 eq(artisanId),
-                any(UpdateStoreRequest.class)
+                any(UpdateStoreRequest.class),
+                isNull(),
+                isNull()
         );
     }
 
     @Test
-    void shouldReturnBadRequestWhenUpdateDescriptionExceedsLimit() throws Exception {
+    void shouldReturnBadRequestWhenUpdateDescriptionExceedsLimit()
+            throws Exception {
+
         String longDescription = "a".repeat(501);
 
         String invalidJson = """
-                {
-                    "description": "%s"
-                }
-                """.formatted(longDescription);
+            {
+                "description": "%s"
+            }
+            """.formatted(longDescription);
 
-        mockMvc.perform(patch("/api/stores/{storeId}", storeId)
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                invalidJson.getBytes(StandardCharsets.UTF_8)
+        );
+
+        mockMvc.perform(multipart("/api/stores/{storeId}", storeId)
+                        .file(requestPart)
                         .principal(authentication)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(invalidJson))
+                        .with(request -> {
+                            request.setMethod("PATCH");
+                            return request;
+                        }))
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(storeService);
