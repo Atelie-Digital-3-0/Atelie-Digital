@@ -26,7 +26,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -73,8 +73,7 @@ public class ProductService {
             UUID storeId,
             ProductRequests.CreateProductRequest request
     ) {
-        StoreModel store = findActiveStore(storeId);
-        validateOwnership(store, artisanId);
+        StoreModel store = findOwnedActiveStore(storeId, artisanId);
 
         validatePrimaryVariation(request.variations());
 
@@ -117,9 +116,10 @@ public class ProductService {
     @Transactional(readOnly = true)
     public Page<ProductResponses.ProductResponse> getProductsByStore(
             UUID storeId,
+            UUID artisanId,
             Pageable pageable
     ) {
-        findActiveStore(storeId);
+        findOwnedActiveStore(storeId, artisanId);
 
         return productRepository.findActiveByStoreId(storeId, pageable)
                 .map(this::toResponse);
@@ -136,7 +136,7 @@ public class ProductService {
     ) {
         ProductModel product = findActiveProduct(productId);
 
-        validateOwnership(product.getStore(), artisanId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
 
         productMapper.updateEntity(request, product);
 
@@ -157,7 +157,7 @@ public class ProductService {
     ) {
         ProductModel product = findActiveProduct(productId);
 
-        validateOwnership(product.getStore(), artisanId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
 
         ProductVariationModel variation = variationRepository
                 .findActiveById(variationId)
@@ -206,7 +206,7 @@ public class ProductService {
     ) {
         ProductModel product = findActiveProduct(productId);
 
-        validateOwnership(product.getStore(), artisanId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
 
         List<ProductVariationModel> variations =
                 variationRepository.findActiveByProductId(productId);
@@ -239,12 +239,6 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    private StoreModel findActiveStore(UUID storeId) {
-        return storeRepository.findByIdAndDeletedAtIsNull(storeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Store not found")
-                );
-    }
 
     private ProductModel findActiveProduct(UUID productId) {
         return productRepository.findActiveById(productId)
@@ -253,16 +247,6 @@ public class ProductService {
                 );
     }
 
-    private void validateOwnership(
-            StoreModel store,
-            UUID artisanId
-    ) {
-        if (!store.getArtisanId().equals(artisanId.toString())) {
-            throw new AccessDeniedException(
-                    "You do not have permission to manage this product"
-            );
-        }
-    }
 
     private void validatePrimaryVariation(
             List<ProductRequests.ProductVariationRequest> variations
@@ -388,5 +372,23 @@ public class ProductService {
                 StorageObjectDeletionHandler.EVENT_TYPE,
                 payload
         );
+    }
+
+    private StoreModel findOwnedActiveStore(
+            UUID storeId,
+            UUID artisanId
+    ) {
+        StoreModel store = storeRepository.findByIdAndDeletedAtIsNull(storeId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Store not found")
+                );
+
+        if (!store.getArtisanId().equals(artisanId.toString())) {
+            throw new AccessDeniedException(
+                    "You do not have permission to manage this store"
+            );
+        }
+
+        return store;
     }
 }
