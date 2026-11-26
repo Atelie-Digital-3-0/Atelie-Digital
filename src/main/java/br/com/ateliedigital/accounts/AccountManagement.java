@@ -1,6 +1,7 @@
 package br.com.ateliedigital.accounts;
 
 import br.com.ateliedigital.accounts.service.AccountService;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -27,5 +28,12 @@ public class AccountManagement {
      */
     public void grantArtisanRole(UUID keycloakId) {
         accountService.grantArtisanRole(keycloakId);
+    }
+
+    /**
+     * Extrai o {@code sub} (keycloakId) do JWT autenticado.
+     */
+    public static UUID keycloakId(JwtAuthenticationToken authentication) {
+        return AccountService.keycloakId(authentication);
     }
 }

@@ -1,5 +1,7 @@
 package br.com.ateliedigital.store.integration.viacep;
 
+import br.com.ateliedigital.exceptions.ZipCodeLookupException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
