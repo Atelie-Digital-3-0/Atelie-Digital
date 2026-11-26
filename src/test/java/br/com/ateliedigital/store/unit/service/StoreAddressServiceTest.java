@@ -3,7 +3,7 @@ package br.com.ateliedigital.store.unit.service;
 import br.com.ateliedigital.exceptions.VioletedRule;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreClient;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreResponse;
-import br.com.ateliedigital.store.integration.viacep.ZipCodeLookupException;
+import br.com.ateliedigital.exceptions.ZipCodeLookupException;
 import br.com.ateliedigital.store.service.StoreAddressService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

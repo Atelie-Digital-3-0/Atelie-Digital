@@ -4,7 +4,7 @@ package br.com.ateliedigital.store.unit.controller;
 import br.com.ateliedigital.exceptions.VioletedRule;
 import br.com.ateliedigital.store.controller.StoreAddressController;
 import br.com.ateliedigital.store.dto.responses.StoreAddressResponses.ZipCodeLookupResponse;
-import br.com.ateliedigital.store.integration.viacep.ZipCodeLookupException;
+import br.com.ateliedigital.exceptions.ZipCodeLookupException;
 import br.com.ateliedigital.store.service.StoreAddressService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
