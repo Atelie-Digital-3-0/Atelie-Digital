@@ -1,4 +1,4 @@
-package br.com.ateliedigital.product.models;
+package br.com.ateliedigital.product.model;
 
 import br.com.ateliedigital.store.model.StoreModel;
 import jakarta.persistence.*;

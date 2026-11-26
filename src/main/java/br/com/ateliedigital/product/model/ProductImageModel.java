@@ -1,4 +1,4 @@
-package br.com.ateliedigital.product.models;
+package br.com.ateliedigital.product.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
