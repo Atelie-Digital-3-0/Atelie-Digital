@@ -116,10 +116,12 @@ public class ProductService {
     @Transactional(readOnly = true)
     public Page<ProductResponses.ProductResponse> getProductsByStore(
             UUID storeId,
-            UUID artisanId,
             Pageable pageable
     ) {
-        findOwnedActiveStore(storeId, artisanId);
+        storeRepository.findByIdAndDeletedAtIsNull(storeId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Store not found")
+                );
 
         return productRepository.findActiveByStoreId(storeId, pageable)
                 .map(this::toResponse);

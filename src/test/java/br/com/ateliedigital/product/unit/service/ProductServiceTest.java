@@ -336,7 +336,7 @@ class ProductServiceTest {
         mockProductResponse();
 
         Page<ProductResponses.ProductResponse> result =
-                productService.getProductsByStore(storeId,artisanId, pageable);
+                productService.getProductsByStore(storeId, pageable);
 
         assertEquals(1, result.getTotalElements());
         assertEquals(productId, result.getContent().getFirst().id());
@@ -354,8 +354,9 @@ class ProductServiceTest {
 
         assertThrows(
                 ResourceNotFoundException.class,
-                () -> productService.getProductsByStore(storeId,artisanId, pageable)
+                () -> productService.getProductsByStore(storeId, pageable)
         );
+
 
         verifyNoInteractions(productRepository);
     }
@@ -600,6 +601,29 @@ class ProductServiceTest {
         );
 
         verify(imageRepository).saveAll(List.of(image));
+    }
+
+    @Test
+    void shouldAllowPublicListingOfProductsFromStore() {
+        PageRequest pageable = PageRequest.of(0, 10);
+
+        store.setArtisanId(anotherArtisanId.toString());
+
+        Page<ProductModel> products =
+                new PageImpl<>(List.of(product));
+
+        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
+                .thenReturn(Optional.of(store));
+
+        when(productRepository.findActiveByStoreId(storeId, pageable))
+                .thenReturn(products);
+
+        mockProductResponse();
+
+        Page<ProductResponses.ProductResponse> result =
+                productService.getProductsByStore(storeId, pageable);
+
+        assertEquals(1, result.getTotalElements());
     }
 
     // HELPERS
