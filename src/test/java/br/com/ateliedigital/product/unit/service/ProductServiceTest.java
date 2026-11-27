@@ -1,4 +1,3 @@
-
 package br.com.ateliedigital.product.unit.service;
 
 import br.com.ateliedigital.exceptions.ResourceNotFoundException;
@@ -19,6 +18,7 @@ import br.com.ateliedigital.product.repository.ProductVariationRepository;
 import br.com.ateliedigital.product.service.ProductService;
 import br.com.ateliedigital.storage.event.StorageObjectDeletionHandler;
 import br.com.ateliedigital.storage.event.StorageObjectDeletionPayload;
+import br.com.ateliedigital.storage.service.StorageService;
 import br.com.ateliedigital.store.model.StoreModel;
 import br.com.ateliedigital.store.repository.StoreRepository;
 
@@ -33,6 +33,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -70,6 +72,9 @@ class ProductServiceTest {
 
     @Mock
     private OutboxManagement outboxManagement;
+
+    @Mock
+    private StorageService storageService;
 
     @InjectMocks
     private ProductService productService;
@@ -624,6 +629,138 @@ class ProductServiceTest {
                 productService.getProductsByStore(storeId, pageable);
 
         assertEquals(1, result.getTotalElements());
+    }
+
+    // IMAGE UPLOAD
+
+    @Test
+    void shouldUploadAndPersistProductVariationImages() {
+        MockMultipartFile first = new MockMultipartFile(
+                "images",
+                "primeira.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47}
+        );
+        MockMultipartFile second = new MockMultipartFile(
+                "images",
+                "segunda.webp",
+                "image/webp",
+                new byte[]{'R', 'I', 'F', 'F', 0, 0, 0, 0, 'W', 'E', 'B', 'P'}
+        );
+
+        when(productRepository.findActiveById(productId))
+                .thenReturn(Optional.of(product));
+        mockStoreOwnedBy(artisanId);
+        when(variationRepository.findActiveById(variationId))
+                .thenReturn(Optional.of(variation));
+        when(imageRepository.findActiveByVariationId(variationId))
+                .thenReturn(List.of());
+        when(storageService.upload(first, "products/" + productId
+                + "/variations/" + variationId))
+                .thenReturn("products/" + productId
+                        + "/variations/" + variationId + "/first.png");
+        when(storageService.upload(second, "products/" + productId
+                + "/variations/" + variationId))
+                .thenReturn("products/" + productId
+                        + "/variations/" + variationId + "/second.webp");
+
+        when(imageRepository.saveAll(anyList()))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProductResponses.ProductImageResponse firstResponse =
+                new ProductResponses.ProductImageResponse(
+                        UUID.randomUUID(),
+                        "http://localhost/first.png",
+                        0,
+                        null
+                );
+        when(imageMapper.toResponse(any(ProductImageModel.class)))
+                .thenReturn(firstResponse);
+
+        List<ProductResponses.ProductImageResponse> responses =
+                productService.addImages(
+                        artisanId,
+                        productId,
+                        variationId,
+                        List.of(first, second)
+                );
+
+        assertEquals(2, responses.size());
+        verify(storageService).upload(eq(first), anyString());
+        verify(storageService).upload(eq(second), anyString());
+        verify(imageRepository).saveAll(anyList());
+    }
+
+    @Test
+    void shouldRejectUploadWhenVariationExceedsImageLimit() {
+        when(productRepository.findActiveById(productId))
+                .thenReturn(Optional.of(product));
+        mockStoreOwnedBy(artisanId);
+        when(variationRepository.findActiveById(variationId))
+                .thenReturn(Optional.of(variation));
+
+        List<ProductImageModel> existingImages = java.util.stream.IntStream
+                .range(0, ProductService.MAX_IMAGES_PER_VARIATION)
+                .mapToObj(index -> new ProductImageModel())
+                .toList();
+
+        when(imageRepository.findActiveByVariationId(variationId))
+                .thenReturn(existingImages);
+
+        MockMultipartFile image = new MockMultipartFile(
+                "images",
+                "nova.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{1, 2, 3}
+        );
+
+        assertThrows(
+                VioletedRule.class,
+                () -> productService.addImages(
+                        artisanId,
+                        productId,
+                        variationId,
+                        List.of(image)
+                )
+        );
+
+        verifyNoInteractions(storageService);
+        verify(imageRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    void shouldDeleteVariationImageAndEnqueueMinioRemoval() {
+        ProductImageModel image = new ProductImageModel();
+        image.setId(UUID.randomUUID());
+        image.setVariation(variation);
+        image.setStorageKey("products/" + productId
+                + "/variations/" + variationId + "/image.png");
+
+        when(productRepository.findActiveById(productId))
+                .thenReturn(Optional.of(product));
+        mockStoreOwnedBy(artisanId);
+        when(variationRepository.findActiveById(variationId))
+                .thenReturn(Optional.of(variation));
+        when(imageRepository.findActiveById(image.getId()))
+                .thenReturn(Optional.of(image));
+        when(imageRepository.findActiveByVariationId(variationId))
+                .thenReturn(List.of());
+
+        productService.deleteImage(
+                artisanId,
+                productId,
+                variationId,
+                image.getId()
+        );
+
+        assertTrue(image.isDeleted());
+        verify(imageRepository).save(image);
+        verify(outboxManagement).enqueue(
+                eq("PRODUCT"),
+                eq(productId),
+                eq(StorageObjectDeletionHandler.EVENT_TYPE),
+                eq(new StorageObjectDeletionPayload(image.getStorageKey()))
+        );
     }
 
     // HELPERS
