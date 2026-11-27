@@ -3,7 +3,7 @@ package br.com.ateliedigital.store.unit.integration.viacep;
 
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreClient;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreResponse;
-import br.com.ateliedigital.store.integration.viacep.ZipCodeLookupException;
+import br.com.ateliedigital.exceptions.ZipCodeLookupException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestClient;

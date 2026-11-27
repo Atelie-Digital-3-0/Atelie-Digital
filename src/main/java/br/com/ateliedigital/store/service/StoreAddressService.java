@@ -4,7 +4,7 @@ import br.com.ateliedigital.exceptions.VioletedRule;
 import br.com.ateliedigital.store.dto.responses.StoreAddressResponses.ZipCodeLookupResponse;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreClient;
 import br.com.ateliedigital.store.integration.viacep.ViaCepStoreResponse;
-import br.com.ateliedigital.store.integration.viacep.ZipCodeLookupException;
+import br.com.ateliedigital.exceptions.ZipCodeLookupException;
 import org.springframework.stereotype.Service;
 
 @Service

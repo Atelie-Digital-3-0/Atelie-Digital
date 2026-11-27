@@ -1,4 +1,4 @@
-package br.com.ateliedigital.store.integration.viacep;
+package br.com.ateliedigital.exceptions;
 
 public class ZipCodeLookupException extends RuntimeException {
     public ZipCodeLookupException(String message) {

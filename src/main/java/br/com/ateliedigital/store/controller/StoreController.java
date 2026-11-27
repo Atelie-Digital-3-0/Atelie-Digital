@@ -1,6 +1,6 @@
 package br.com.ateliedigital.store.controller;
 
-import br.com.ateliedigital.accounts.service.AccountService;
+import br.com.ateliedigital.accounts.AccountManagement;
 import br.com.ateliedigital.store.dto.requests.StoreRequests.CreateStoreRequest;
 import br.com.ateliedigital.store.dto.requests.StoreRequests.UpdateStoreRequest;
 import br.com.ateliedigital.store.dto.responses.StoreResponses.StorePublicResponse;
@@ -36,7 +36,7 @@ public class StoreController {
             @RequestPart("image") MultipartFile image,
             @RequestPart("banner") MultipartFile banner
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         StorePublicResponse response =
                 storeService.createStore(
@@ -66,7 +66,7 @@ public class StoreController {
     public ResponseEntity<StorePublicResponse> getMyStore(
             JwtAuthenticationToken authentication
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         return ResponseEntity.ok(storeService.getMyStore(artisanId));
     }
@@ -83,7 +83,7 @@ public class StoreController {
             @RequestPart(value = "image", required = false) MultipartFile image,
             @RequestPart(value = "banner", required = false) MultipartFile banner
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         StorePublicResponse response =
                 storeService.updateStore(
@@ -103,7 +103,7 @@ public class StoreController {
             JwtAuthenticationToken authentication,
             @PathVariable UUID storeId
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         storeService.deleteStore(storeId, artisanId);
 
