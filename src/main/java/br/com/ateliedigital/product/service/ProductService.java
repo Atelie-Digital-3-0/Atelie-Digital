@@ -1,4 +1,3 @@
-
 package br.com.ateliedigital.product.service;
 
 import br.com.ateliedigital.exceptions.ResourceNotFoundException;
@@ -26,9 +25,15 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import br.com.ateliedigital.storage.service.StorageService;
+import org.springframework.web.multipart.MultipartFile;
 
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 public class ProductService {
@@ -44,6 +49,8 @@ public class ProductService {
 
     private final OutboxManagement outboxManagement;
 
+    private final StorageService storageService;
+
     public ProductService(
             ProductRepository productRepository,
             ProductVariationRepository variationRepository,
@@ -52,7 +59,8 @@ public class ProductService {
             ProductMapper productMapper,
             ProductVariationMapper variationMapper,
             ProductImageMapper imageMapper,
-            OutboxManagement outboxManagement
+            OutboxManagement outboxManagement,
+            StorageService storageService
     ) {
         this.productRepository = productRepository;
         this.variationRepository = variationRepository;
@@ -62,6 +70,7 @@ public class ProductService {
         this.variationMapper = variationMapper;
         this.imageMapper = imageMapper;
         this.outboxManagement = outboxManagement;
+        this.storageService = storageService;
     }
 
     /**
@@ -242,6 +251,171 @@ public class ProductService {
     }
 
 
+    public static final int MAX_IMAGES_PER_VARIATION = 6;
+
+    /**
+     * Uploads images to a product variation and persists their storage keys.
+     */
+    @Transactional
+    public List<ProductResponses.ProductImageResponse> addImages(
+            UUID artisanId,
+            UUID productId,
+            UUID variationId,
+            List<MultipartFile> files
+    ) {
+        if (files == null || files.isEmpty()) {
+            throw new VioletedRule("At least one image is required");
+        }
+
+        ProductModel product = findActiveProduct(productId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
+        ProductVariationModel variation = findActiveVariation(
+                productId,
+                variationId
+        );
+
+        List<ProductImageModel> existingImages =
+                imageRepository.findActiveByVariationId(variationId);
+
+        if (existingImages.size() + files.size()
+                > MAX_IMAGES_PER_VARIATION) {
+            throw new VioletedRule(
+                    "A product variation can have at most "
+                            + MAX_IMAGES_PER_VARIATION
+                            + " images"
+            );
+        }
+
+        List<String> uploadedObjectKeys = new ArrayList<>();
+
+        try {
+            List<ProductImageModel> savedImages = new ArrayList<>();
+
+            for (int index = 0; index < files.size(); index++) {
+                String prefix = "products/" + productId
+                        + "/variations/" + variationId;
+
+                String objectKey = storageService.upload(
+                        files.get(index),
+                        prefix
+                );
+                uploadedObjectKeys.add(objectKey);
+                registerRollbackCleanup(objectKey);
+
+                ProductImageModel image = new ProductImageModel();
+                image.setVariation(variation);
+                image.setStorageKey(objectKey);
+                image.setDisplayOrder(existingImages.size() + index);
+
+                savedImages.add(image);
+            }
+
+            List<ProductImageModel> persistedImages =
+                    imageRepository.saveAll(savedImages);
+
+            return persistedImages.stream()
+                    .map(imageMapper::toResponse)
+                    .toList();
+
+        } catch (RuntimeException exception) {
+            cleanupUploadedObjects(uploadedObjectKeys, exception);
+            throw exception;
+        }
+    }
+
+    /**
+     * Backward-compatible upload: images are attached to the primary variation.
+     */
+    @Transactional
+    public void uploadImage(
+            UUID artisanId,
+            UUID productId,
+            MultipartFile image
+    ) {
+        ProductModel product = findActiveProduct(productId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
+        ProductVariationModel primaryVariation =
+                variationRepository.findActiveByProductId(productId).stream()
+                        .filter(ProductVariationModel::isPrimary)
+                        .findFirst()
+                        .orElseThrow(() -> new VioletedRule(
+                                "The product must have a primary variation"
+                        ));
+
+        addImages(
+                artisanId,
+                productId,
+                primaryVariation.getId(),
+                List.of(image)
+        );
+    }
+
+    /**
+     * Soft deletes an image and schedules its MinIO object for removal.
+     */
+    @Transactional
+    public void deleteImage(
+            UUID artisanId,
+            UUID productId,
+            UUID variationId,
+            UUID imageId
+    ) {
+        ProductModel product = findActiveProduct(productId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
+        findActiveVariation(productId, variationId);
+
+        ProductImageModel image = imageRepository.findActiveById(imageId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product image not found")
+                );
+
+        if (!image.getVariation().getId().equals(variationId)
+                || !image.getVariation().getProduct().getId().equals(productId)) {
+            throw new ResourceNotFoundException("Product image not found");
+        }
+
+        image.setDeleted(true);
+        imageRepository.save(image);
+
+        enqueueObjectDeletion(image.getStorageKey(), productId);
+
+        normalizeImageDisplayOrders(variationId);
+    }
+
+    /**
+     * Backward-compatible bulk image deletion.
+     */
+    @Transactional
+    public void deleteImage(
+            UUID artisanId,
+            UUID productId,
+            List<UUID> imageIds
+    ) {
+        if (imageIds == null || imageIds.isEmpty()) {
+            throw new VioletedRule("At least one image is required");
+        }
+
+        ProductModel product = findActiveProduct(productId);
+        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
+        for (UUID imageId : imageIds) {
+            ProductImageModel image = imageRepository.findActiveById(imageId)
+                    .orElseThrow(() ->
+                            new ResourceNotFoundException("Product image not found")
+                    );
+
+            if (!image.getVariation().getProduct().getId().equals(productId)) {
+                throw new ResourceNotFoundException("Product image not found");
+            }
+
+            UUID variationId = image.getVariation().getId();
+            deleteImage(artisanId, productId, variationId, imageId);
+        }
+    }
+
     private ProductModel findActiveProduct(UUID productId) {
         return productRepository.findActiveById(productId)
                 .orElseThrow(() ->
@@ -392,5 +566,75 @@ public class ProductService {
         }
 
         return store;
+    }
+
+    private ProductVariationModel findActiveVariation(
+            UUID productId,
+            UUID variationId
+    ) {
+        ProductVariationModel variation = variationRepository
+                .findActiveById(variationId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Product variation not found")
+                );
+
+        if (!variation.getProduct().getId().equals(productId)) {
+            throw new ResourceNotFoundException("Product variation not found");
+        }
+
+        return variation;
+    }
+
+    private void normalizeImageDisplayOrders(UUID variationId) {
+        List<ProductImageModel> images =
+                imageRepository.findActiveByVariationId(variationId);
+
+        for (int index = 0; index < images.size(); index++) {
+            if (!indexEquals(images.get(index).getDisplayOrder(), index)) {
+                images.get(index).setDisplayOrder(index);
+            }
+        }
+
+        if (!images.isEmpty()) {
+            imageRepository.saveAll(images);
+        }
+    }
+
+    private boolean indexEquals(Integer displayOrder, int index) {
+        return displayOrder != null && displayOrder == index;
+    }
+
+    private void cleanupUploadedObjects(
+            List<String> objectKeys,
+            RuntimeException originalException
+    ) {
+        for (String objectKey : objectKeys) {
+            try {
+                storageService.delete(objectKey);
+            } catch (RuntimeException cleanupException) {
+                originalException.addSuppressed(cleanupException);
+            }
+        }
+    }
+
+    private void registerRollbackCleanup(String objectKey) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            return;
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                            try {
+                                storageService.delete(objectKey);
+                            } catch (RuntimeException ignored) {
+                                // A falha de limpeza não deve ocultar a falha original.
+                            }
+                        }
+                    }
+                }
+        );
     }
 }
