@@ -1,24 +1,31 @@
-
 package br.com.ateliedigital.product.mapper;
 
 import br.com.ateliedigital.product.dto.responses.ProductResponses;
 import br.com.ateliedigital.product.model.ProductImageModel;
 import br.com.ateliedigital.storage.service.StorageService;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = "spring")
-public abstract class ProductImageMapper {
+@Component
+public class ProductImageMapper {
 
-    @Autowired
-    protected StorageService storageService;
+    private final StorageService storageService;
 
-    @Mapping(
-            target = "url",
-            expression = "java(storageService.getPublicUrl(image.getStorageKey()))"
-    )
-    public abstract ProductResponses.ProductImageResponse toResponse(
+    public ProductImageMapper(StorageService storageService) {
+        this.storageService = storageService;
+    }
+
+    public ProductResponses.ProductImageResponse toResponse(
             ProductImageModel image
-    );
+    ) {
+        if (image == null) {
+            return null;
+        }
+
+        return new ProductResponses.ProductImageResponse(
+                image.getId(),
+                storageService.getPublicUrl(image.getStorageKey()),
+                image.getDisplayOrder(),
+                image.getCreatedAt()
+        );
+    }
 }

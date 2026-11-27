@@ -10,8 +10,7 @@ import org.mapstruct.MappingTarget;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 @Mapper(
-        componentModel = "spring",
-        uses = ProductImageMapper.class
+        componentModel = "spring"
 )
 public interface ProductVariationMapper {
 
