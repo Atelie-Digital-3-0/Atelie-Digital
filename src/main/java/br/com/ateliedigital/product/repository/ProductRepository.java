@@ -16,6 +16,7 @@ public interface ProductRepository extends JpaRepository<ProductModel, UUID> {
             FROM ProductModel p
             WHERE p.id = :productId
               AND p.isDeleted = false
+              AND p.store.deletedAt IS NULL
             """)
     Optional<ProductModel> findActiveById(
             @Param("productId") UUID productId
