@@ -45,12 +45,12 @@ spring:
       write-bigdecimal-as-plain: true
   flyway:
     enabled: true
-    schemas: outbox,accounts,catalog,orders,store,integration
+    schemas: outbox,accounts,product,orders,store,integration
     default-schema: accounts
     create-schemas: true
     locations: >-
       classpath:db/migration/accounts,
-      classpath:db/migration/catalog,
+      classpath:db/migration/product,
       classpath:db/migration/orders, 
       classpath:db/migration/store,
       classpath:db/migration/integration
