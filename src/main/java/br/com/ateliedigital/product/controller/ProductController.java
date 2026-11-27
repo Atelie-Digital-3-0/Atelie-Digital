@@ -1,4 +1,3 @@
-
 package br.com.ateliedigital.product.controller;
 
 import br.com.ateliedigital.accounts.service.AccountService;
@@ -10,13 +9,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -126,6 +128,82 @@ public class ProductController {
         UUID artisanId = AccountService.keycloakId(authentication);
 
         productService.deleteProduct(artisanId, productId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(
+            value = "/products/{productId}/images",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasRole('ARTISAN')")
+    public ResponseEntity<Void> uploadImage(
+            JwtAuthenticationToken authentication,
+            @PathVariable UUID productId,
+            @RequestParam MultipartFile image
+    ) {
+        UUID artisanId = AccountService.keycloakId(authentication);
+
+        productService.uploadImage(artisanId, productId, image);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/products/{productId}/images")
+    @PreAuthorize("hasRole('ARTISAN')")
+    public ResponseEntity<Void> deleteImage(
+            JwtAuthenticationToken authentication,
+            @PathVariable UUID productId,
+            @RequestParam List<UUID> imageIds
+    ) {
+        UUID artisanId = AccountService.keycloakId(authentication);
+
+        productService.deleteImage(artisanId, productId, imageIds);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping(
+            value = "/products/{productId}/variations/{variationId}/images",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasRole('ARTISAN')")
+    public ResponseEntity<List<ProductResponses.ProductImageResponse>> addImages(
+            JwtAuthenticationToken authentication,
+            @PathVariable UUID productId,
+            @PathVariable UUID variationId,
+            @RequestPart("images") List<MultipartFile> images
+    ) {
+        UUID artisanId = AccountService.keycloakId(authentication);
+
+        return ResponseEntity.ok(
+                productService.addImages(
+                        artisanId,
+                        productId,
+                        variationId,
+                        images
+                )
+        );
+    }
+
+    @DeleteMapping(
+            "/products/{productId}/variations/{variationId}/images/{imageId}"
+    )
+    @PreAuthorize("hasRole('ARTISAN')")
+    public ResponseEntity<Void> deleteImage(
+            JwtAuthenticationToken authentication,
+            @PathVariable UUID productId,
+            @PathVariable UUID variationId,
+            @PathVariable UUID imageId
+    ) {
+        UUID artisanId = AccountService.keycloakId(authentication);
+
+        productService.deleteImage(
+                artisanId,
+                productId,
+                variationId,
+                imageId
+        );
 
         return ResponseEntity.noContent().build();
     }
