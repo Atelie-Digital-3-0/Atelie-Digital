@@ -65,7 +65,7 @@ services:
       - minio
     environment:
       MC_HOST_local: http://${MINIO_ACCESS_KEY}:${MINIO_SECRET_KEY}@minio:9000
-    command: [ "mb", "--ignore-existing", "local/${MINIO_BUCKET:-catalogs}" ]
+    command: [ "mb", "--ignore-existing", "local/${MINIO_BUCKET:-atelie-media}" ]
     restart: on-failure
 
 volumes:
