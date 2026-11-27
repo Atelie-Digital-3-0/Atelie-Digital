@@ -1,6 +1,7 @@
 package br.com.ateliedigital.product.unit.controller;
 
 import br.com.ateliedigital.product.controller.ProductController;
+import br.com.ateliedigital.product.dto.requests.ProductRequests;
 import br.com.ateliedigital.product.dto.responses.ProductResponses;
 import br.com.ateliedigital.product.service.ProductService;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,9 +14,11 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -114,6 +117,76 @@ class ProductControllerTest {
                 productId,
                 variationId,
                 imageId
+        );
+    }
+
+    @Test
+    void shouldCreateProductWithImagesInOneMultipartRequest() throws Exception {
+        UUID storeId = UUID.randomUUID();
+
+        MockMultipartFile requestPart = new MockMultipartFile(
+                "request",
+                "",
+                MediaType.APPLICATION_JSON_VALUE,
+                """
+                        {
+                          "name": "Vaso artesanal",
+                          "description": "Vaso produzido manualmente",
+                          "variations": [
+                            {
+                              "price": 50.00,
+                              "weight": 1.000,
+                              "length": 20.000,
+                              "width": 15.000,
+                              "height": 25.000,
+                              "sku": "VASO-001",
+                              "stock": 10,
+                              "primary": true
+                            }
+                          ]
+                        }
+                        """.getBytes(StandardCharsets.UTF_8)
+        );
+
+        MockMultipartFile image = new MockMultipartFile(
+                "images",
+                "vaso.png",
+                MediaType.IMAGE_PNG_VALUE,
+                new byte[]{(byte) 0x89, 0x50, 0x4E, 0x47}
+        );
+
+        ProductResponses.ProductResponse response =
+                new ProductResponses.ProductResponse(
+                        productId,
+                        storeId,
+                        "Vaso artesanal",
+                        "Vaso produzido manualmente",
+                        List.of(),
+                        null,
+                        null
+                );
+
+        when(productService.createProduct(
+                eq(artisanId),
+                eq(storeId),
+                any(ProductRequests.CreateProductRequest.class),
+                anyList()
+        )).thenReturn(response);
+
+        mockMvc.perform(multipart(
+                        "/api/stores/{storeId}/products",
+                        storeId
+                )
+                        .file(requestPart)
+                        .file(image)
+                        .principal(authentication))
+                .andExpect(status().isCreated());
+
+        verify(productService).createProduct(
+                eq(artisanId),
+                eq(storeId),
+                any(ProductRequests.CreateProductRequest.class),
+                anyList()
         );
     }
 }
