@@ -55,6 +55,37 @@ public class ProductController {
         return ResponseEntity.created(uri).body(response);
     }
 
+    @PostMapping(
+            value = "/stores/{storeId}/products",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasRole('ARTISAN')")
+    public ResponseEntity<ProductResponses.ProductResponse> createWithImages(
+            JwtAuthenticationToken authentication,
+            @PathVariable UUID storeId,
+            @Valid @RequestPart("request")
+            ProductRequests.CreateProductRequest request,
+            @RequestPart(value = "images", required = false)
+            List<MultipartFile> images
+    ) {
+        UUID artisanId = AccountService.keycloakId(authentication);
+
+        ProductResponses.ProductResponse response =
+                productService.createProduct(
+                        artisanId,
+                        storeId,
+                        request,
+                        images
+                );
+
+        URI uri = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/products/{productId}")
+                .buildAndExpand(response.id())
+                .toUri();
+
+        return ResponseEntity.created(uri).body(response);
+    }
+
     @GetMapping("/products/{productId}")
     public ResponseEntity<ProductResponses.ProductResponse> getById(
             @PathVariable UUID productId
