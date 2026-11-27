@@ -1,6 +1,6 @@
 package br.com.ateliedigital.product.controller;
 
-import br.com.ateliedigital.accounts.service.AccountService;
+import br.com.ateliedigital.accounts.AccountManagement;
 import br.com.ateliedigital.product.dto.requests.ProductRequests;
 import br.com.ateliedigital.product.dto.responses.ProductResponses;
 import br.com.ateliedigital.product.service.ProductService;
@@ -38,7 +38,7 @@ public class ProductController {
             @PathVariable UUID storeId,
             @Valid @RequestBody ProductRequests.CreateProductRequest request
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         ProductResponses.ProductResponse response =
                 productService.createProduct(
@@ -68,7 +68,7 @@ public class ProductController {
             @RequestPart(value = "images", required = false)
             List<MultipartFile> images
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         ProductResponses.ProductResponse response =
                 productService.createProduct(
@@ -116,7 +116,7 @@ public class ProductController {
             @PathVariable UUID productId,
             @Valid @RequestBody ProductRequests.UpdateProductRequest request
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         return ResponseEntity.ok(
                 productService.updateProduct(
@@ -138,7 +138,7 @@ public class ProductController {
             @Valid @RequestBody
             ProductRequests.UpdateProductVariationRequest request
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         return ResponseEntity.ok(
                 productService.updateVariation(
@@ -156,7 +156,7 @@ public class ProductController {
             JwtAuthenticationToken authentication,
             @PathVariable UUID productId
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         productService.deleteProduct(artisanId, productId);
 
@@ -173,7 +173,7 @@ public class ProductController {
             @PathVariable UUID productId,
             @RequestParam MultipartFile image
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         productService.uploadImage(artisanId, productId, image);
 
@@ -187,7 +187,7 @@ public class ProductController {
             @PathVariable UUID productId,
             @RequestParam List<UUID> imageIds
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         productService.deleteImage(artisanId, productId, imageIds);
 
@@ -205,7 +205,7 @@ public class ProductController {
             @PathVariable UUID variationId,
             @RequestPart("images") List<MultipartFile> images
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         return ResponseEntity.ok(
                 productService.addImages(
@@ -227,7 +227,7 @@ public class ProductController {
             @PathVariable UUID variationId,
             @PathVariable UUID imageId
     ) {
-        UUID artisanId = AccountService.keycloakId(authentication);
+        UUID artisanId = AccountManagement.keycloakId(authentication);
 
         productService.deleteImage(
                 artisanId,

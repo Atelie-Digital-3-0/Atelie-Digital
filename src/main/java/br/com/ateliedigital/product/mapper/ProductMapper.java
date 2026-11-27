@@ -17,22 +17,21 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface ProductMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "store", ignore = true)
+    @Mapping(target = "storeId", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     ProductModel toEntity(
             ProductRequests.CreateProductRequest request
     );
-
-    @Mapping(target = "storeId", source = "store.id")
+    @Mapping(target = "storeId", source = "storeId")
     @Mapping(target = "variations", ignore = true)
     ProductResponses.ProductResponse toResponse(
             ProductModel product
     );
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "store", ignore = true)
+    @Mapping(target = "storeId", ignore = true)
     @Mapping(target = "variations", ignore = true)
     @Mapping(target = "deleted", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

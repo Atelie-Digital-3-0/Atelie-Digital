@@ -1,3 +1,4 @@
+
 package br.com.ateliedigital.product.repository;
 
 import br.com.ateliedigital.product.model.ProductModel;
@@ -11,12 +12,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<ProductModel, UUID> {
+
     @Query("""
             SELECT p
             FROM ProductModel p
             WHERE p.id = :productId
               AND p.isDeleted = false
-              AND p.store.deletedAt IS NULL
             """)
     Optional<ProductModel> findActiveById(
             @Param("productId") UUID productId
@@ -25,7 +26,7 @@ public interface ProductRepository extends JpaRepository<ProductModel, UUID> {
     @Query("""
             SELECT p
             FROM ProductModel p
-            WHERE p.store.id = :storeId
+            WHERE p.storeId = :storeId
               AND p.isDeleted = false
             """)
     Page<ProductModel> findActiveByStoreId(
@@ -37,7 +38,7 @@ public interface ProductRepository extends JpaRepository<ProductModel, UUID> {
             SELECT CASE WHEN COUNT(p) > 0 THEN true ELSE false END
             FROM ProductModel p
             WHERE p.id = :productId
-              AND p.store.id = :storeId
+              AND p.storeId = :storeId
               AND p.isDeleted = false
             """)
     boolean existsActiveByIdAndStoreId(

@@ -146,6 +146,11 @@ public class StoreService {
 
         return storeMapper.toResponse(store);
     }
+    @Transactional(readOnly = true)
+    public void validateStoreOwnership(UUID storeId, UUID artisanId) {
+        StoreModel store = findActiveStore(storeId);
+        validateOwnership(store, artisanId);
+    }
 
     @Transactional(readOnly = true)
     public StoreResponses.StorePublicResponse getMyStore(UUID artisanId) {
@@ -236,6 +241,12 @@ public class StoreService {
 
         storeRepository.save(store);
     }
+
+    @Transactional(readOnly = true)
+    public void validateActiveStore(UUID storeId) {
+        findActiveStore(storeId);
+    }
+
 
     private StoreModel findActiveStore(UUID storeId) {
         return storeRepository.findByIdAndDeletedAtIsNull(storeId)
@@ -330,5 +341,6 @@ public class StoreService {
                 }
         );
     }
+
 
 }

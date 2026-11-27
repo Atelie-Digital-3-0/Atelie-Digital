@@ -19,8 +19,8 @@ import br.com.ateliedigital.product.service.ProductService;
 import br.com.ateliedigital.storage.event.StorageObjectDeletionHandler;
 import br.com.ateliedigital.storage.event.StorageObjectDeletionPayload;
 import br.com.ateliedigital.storage.service.StorageService;
-import br.com.ateliedigital.store.model.StoreModel;
-import br.com.ateliedigital.store.repository.StoreRepository;
+import org.springframework.security.access.AccessDeniedException;
+
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,7 +35,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.access.AccessDeniedException;
+import br.com.ateliedigital.store.StoreManagement;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -59,7 +59,7 @@ class ProductServiceTest {
     private ProductImageRepository imageRepository;
 
     @Mock
-    private StoreRepository storeRepository;
+    private StoreManagement storeManagement;
 
     @Mock
     private ProductMapper productMapper;
@@ -85,7 +85,7 @@ class ProductServiceTest {
     private UUID productId;
     private UUID variationId;
 
-    private StoreModel store;
+
     private ProductModel product;
     private ProductVariationModel variation;
 
@@ -100,14 +100,9 @@ class ProductServiceTest {
         productId = UUID.randomUUID();
         variationId = UUID.randomUUID();
 
-        store = new StoreModel();
-        store.setId(storeId);
-        store.setArtisanId(artisanId.toString());
-        store.setName("Ateliê das Flores");
-
         product = new ProductModel();
         product.setId(productId);
-        product.setStore(store);
+        product.setStoreId(storeId);
         product.setName("Vaso artesanal");
         product.setDescription("Vaso produzido manualmente");
 
@@ -156,8 +151,7 @@ class ProductServiceTest {
     void shouldCreateProductSuccessfully() {
         ProductRequests.CreateProductRequest request = createRequest();
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        mockStoreOwnedBy(artisanId);
 
         when(variationRepository.existsBySkuIncludingDeleted("VASO-001"))
                 .thenReturn(false);
@@ -174,19 +168,21 @@ class ProductServiceTest {
         assertEquals(productId, result.id());
         assertEquals(storeId, result.storeId());
 
-        assertSame(store, product.getStore());
+        assertEquals(storeId, product.getStoreId());
         assertSame(product, variation.getProduct());
 
         verify(productRepository).save(product);
         verify(variationRepository).saveAll(product.getVariations());
+        verify(storeManagement).validateStoreOwnership(storeId, artisanId);
     }
 
     @Test
     void shouldThrowExceptionWhenStoreDoesNotExistDuringCreation() {
         ProductRequests.CreateProductRequest request = createRequest();
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.empty());
+        doThrow(new ResourceNotFoundException("Store not found"))
+                .when(storeManagement)
+                .validateStoreOwnership(storeId, artisanId);
 
         assertThrows(
                 ResourceNotFoundException.class,
@@ -204,10 +200,7 @@ class ProductServiceTest {
     void shouldRejectCreationWhenArtisanIsNotStoreOwner() {
         ProductRequests.CreateProductRequest request = createRequest();
 
-        store.setArtisanId(anotherArtisanId.toString());
-
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        mockStoreOwnedBy(anotherArtisanId);
 
         assertThrows(
                 AccessDeniedException.class,
@@ -230,8 +223,7 @@ class ProductServiceTest {
                         List.of(variationRequest(false))
                 );
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        mockStoreOwnedBy(artisanId);
 
         assertThrows(
                 VioletedRule.class,
@@ -256,8 +248,7 @@ class ProductServiceTest {
                         )
                 );
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        mockStoreOwnedBy(artisanId);
 
         assertThrows(
                 VioletedRule.class,
@@ -274,8 +265,7 @@ class ProductServiceTest {
     void shouldRejectCreationWhenSkuIsAlreadyRegistered() {
         ProductRequests.CreateProductRequest request = createRequest();
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        mockStoreOwnedBy(artisanId);
 
         when(variationRepository.existsBySkuIncludingDeleted("VASO-001"))
                 .thenReturn(true);
@@ -332,8 +322,8 @@ class ProductServiceTest {
         Page<ProductModel> products =
                 new PageImpl<>(List.of(product));
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        doNothing().when(storeManagement)
+                .validateActiveStore(storeId);
 
         when(productRepository.findActiveByStoreId(storeId, pageable))
                 .thenReturn(products);
@@ -354,8 +344,9 @@ class ProductServiceTest {
     void shouldThrowExceptionWhenListingProductsFromNonexistentStore() {
         PageRequest pageable = PageRequest.of(0, 10);
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.empty());
+        doThrow(new ResourceNotFoundException("Store not found"))
+                .when(storeManagement)
+                .validateActiveStore(storeId);
 
         assertThrows(
                 ResourceNotFoundException.class,
@@ -612,13 +603,12 @@ class ProductServiceTest {
     void shouldAllowPublicListingOfProductsFromStore() {
         PageRequest pageable = PageRequest.of(0, 10);
 
-        store.setArtisanId(anotherArtisanId.toString());
 
         Page<ProductModel> products =
                 new PageImpl<>(List.of(product));
 
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        doNothing().when(storeManagement)
+                .validateActiveStore(storeId);
 
         when(productRepository.findActiveByStoreId(storeId, pageable))
                 .thenReturn(products);
@@ -804,9 +794,13 @@ class ProductServiceTest {
                 .thenReturn(List.of());
     }
     private void mockStoreOwnedBy(UUID ownerId) {
-        store.setArtisanId(ownerId.toString());
-
-        when(storeRepository.findByIdAndDeletedAtIsNull(storeId))
-                .thenReturn(Optional.of(store));
+        if (ownerId.equals(artisanId)) {
+            doNothing().when(storeManagement)
+                    .validateStoreOwnership(storeId, artisanId);
+        } else {
+            doThrow(new AccessDeniedException("You do not own this store"))
+                    .when(storeManagement)
+                    .validateStoreOwnership(storeId, artisanId);
+        }
     }
 }

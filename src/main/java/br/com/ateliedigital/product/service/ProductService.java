@@ -17,13 +17,11 @@ import br.com.ateliedigital.product.repository.ProductRepository;
 import br.com.ateliedigital.product.repository.ProductVariationRepository;
 import br.com.ateliedigital.storage.event.StorageObjectDeletionHandler;
 import br.com.ateliedigital.storage.event.StorageObjectDeletionPayload;
-import br.com.ateliedigital.store.model.StoreModel;
-import br.com.ateliedigital.store.repository.StoreRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import br.com.ateliedigital.store.StoreManagement;
 
 import br.com.ateliedigital.storage.service.StorageService;
 import org.springframework.web.multipart.MultipartFile;
@@ -41,7 +39,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final ProductVariationRepository variationRepository;
     private final ProductImageRepository imageRepository;
-    private final StoreRepository storeRepository;
+    private final StoreManagement storeManagement;
 
     private final ProductMapper productMapper;
     private final ProductVariationMapper variationMapper;
@@ -55,7 +53,7 @@ public class ProductService {
             ProductRepository productRepository,
             ProductVariationRepository variationRepository,
             ProductImageRepository imageRepository,
-            StoreRepository storeRepository,
+            StoreManagement storeManagement,
             ProductMapper productMapper,
             ProductVariationMapper variationMapper,
             ProductImageMapper imageMapper,
@@ -65,7 +63,7 @@ public class ProductService {
         this.productRepository = productRepository;
         this.variationRepository = variationRepository;
         this.imageRepository = imageRepository;
-        this.storeRepository = storeRepository;
+        this.storeManagement = storeManagement;
         this.productMapper = productMapper;
         this.variationMapper = variationMapper;
         this.imageMapper = imageMapper;
@@ -92,7 +90,7 @@ public class ProductService {
             ProductRequests.CreateProductRequest request,
             List<MultipartFile> images
     ) {
-        StoreModel store = findOwnedActiveStore(storeId, artisanId);
+        storeManagement.validateStoreOwnership(storeId, artisanId);
 
         validatePrimaryVariation(request.variations());
 
@@ -101,7 +99,7 @@ public class ProductService {
         );
 
         ProductModel product = productMapper.toEntity(request);
-        product.setStore(store);
+        product.setStoreId(storeId);
 
         ProductModel savedProduct = productRepository.save(product);
 
@@ -153,10 +151,7 @@ public class ProductService {
             UUID storeId,
             Pageable pageable
     ) {
-        storeRepository.findByIdAndDeletedAtIsNull(storeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Store not found")
-                );
+        storeManagement.validateActiveStore(storeId);
 
         return productRepository.findActiveByStoreId(storeId, pageable)
                 .map(this::toResponse);
@@ -173,7 +168,7 @@ public class ProductService {
     ) {
         ProductModel product = findActiveProduct(productId);
 
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+        storeManagement.validateStoreOwnership(product.getStoreId(), artisanId);
 
         productMapper.updateEntity(request, product);
 
@@ -193,8 +188,9 @@ public class ProductService {
             ProductRequests.UpdateProductVariationRequest request
     ) {
         ProductModel product = findActiveProduct(productId);
+        validateProductOwnership(product, artisanId);
 
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
 
         ProductVariationModel variation = variationRepository
                 .findActiveById(variationId)
@@ -242,8 +238,7 @@ public class ProductService {
             UUID productId
     ) {
         ProductModel product = findActiveProduct(productId);
-
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+        validateProductOwnership(product, artisanId);
 
         List<ProductVariationModel> variations =
                 variationRepository.findActiveByProductId(productId);
@@ -294,7 +289,8 @@ public class ProductService {
         }
 
         ProductModel product = findActiveProduct(productId);
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+        validateProductOwnership(product, artisanId);
+
 
         ProductVariationModel variation = findActiveVariation(
                 productId,
@@ -360,7 +356,9 @@ public class ProductService {
             MultipartFile image
     ) {
         ProductModel product = findActiveProduct(productId);
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
+        validateProductOwnership(product, artisanId);
+
 
         ProductVariationModel primaryVariation =
                 variationRepository.findActiveByProductId(productId).stream()
@@ -389,7 +387,8 @@ public class ProductService {
             UUID imageId
     ) {
         ProductModel product = findActiveProduct(productId);
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+        validateProductOwnership(product, artisanId);
+
 
         findActiveVariation(productId, variationId);
 
@@ -425,7 +424,10 @@ public class ProductService {
         }
 
         ProductModel product = findActiveProduct(productId);
-        findOwnedActiveStore(product.getStore().getId(), artisanId);
+
+
+        validateProductOwnership(product, artisanId);
+
 
         for (UUID imageId : imageIds) {
             ProductImageModel image = imageRepository.findActiveById(imageId)
@@ -443,10 +445,14 @@ public class ProductService {
     }
 
     private ProductModel findActiveProduct(UUID productId) {
-        return productRepository.findActiveById(productId)
+        ProductModel product = productRepository.findActiveById(productId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Product not found")
                 );
+
+        storeManagement.validateActiveStore(product.getStoreId());
+
+        return product;
     }
 
 
@@ -576,23 +582,7 @@ public class ProductService {
         );
     }
 
-    private StoreModel findOwnedActiveStore(
-            UUID storeId,
-            UUID artisanId
-    ) {
-        StoreModel store = storeRepository.findByIdAndDeletedAtIsNull(storeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Store not found")
-                );
 
-        if (!store.getArtisanId().equals(artisanId.toString())) {
-            throw new AccessDeniedException(
-                    "You do not have permission to manage this store"
-            );
-        }
-
-        return store;
-    }
 
     private ProductVariationModel findActiveVariation(
             UUID productId,
@@ -661,6 +651,15 @@ public class ProductService {
                         }
                     }
                 }
+        );
+    }
+    private void validateProductOwnership(
+            ProductModel product,
+            UUID artisanId
+    ) {
+        storeManagement.validateStoreOwnership(
+                product.getStoreId(),
+                artisanId
         );
     }
 }

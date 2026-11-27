@@ -1,6 +1,6 @@
 package br.com.ateliedigital.product.model;
 
-import br.com.ateliedigital.store.model.StoreModel;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -23,9 +23,8 @@ public class ProductModel {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "store_id", nullable = false)
-    private StoreModel store;
+    @Column(name = "store_id", nullable = false)
+    private UUID storeId;
 
     @Column(nullable = false, length = 150)
     private String name;
