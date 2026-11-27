@@ -82,6 +82,16 @@ public class ProductService {
             UUID storeId,
             ProductRequests.CreateProductRequest request
     ) {
+        return createProduct(artisanId, storeId, request, List.of());
+    }
+
+    @Transactional
+    public ProductResponses.ProductResponse createProduct(
+            UUID artisanId,
+            UUID storeId,
+            ProductRequests.CreateProductRequest request,
+            List<MultipartFile> images
+    ) {
         StoreModel store = findOwnedActiveStore(storeId, artisanId);
 
         validatePrimaryVariation(request.variations());
@@ -103,6 +113,22 @@ public class ProductService {
         );
 
         variationRepository.saveAll(variations);
+
+        if (images != null && !images.isEmpty()) {
+            ProductVariationModel primaryVariation = variations.stream()
+                    .filter(ProductVariationModel::isPrimary)
+                    .findFirst()
+                    .orElseThrow(() -> new VioletedRule(
+                            "The product must have a primary variation"
+                    ));
+
+            addImages(
+                    artisanId,
+                    savedProduct.getId(),
+                    primaryVariation.getId(),
+                    images
+            );
+        }
 
         return toResponse(savedProduct);
     }
